@@ -29,20 +29,43 @@ export const uploadMedia = async (req, res) => {
 
         // Get center details
         const center = await Center.findOne({ centerCode });
+        let centerInfo;
         if (!center) {
-            return res.status(404).json({ message: "Center not found" });
+            // For new centers that don't exist yet, we'll create a minimal center object
+            // This allows media uploads for centers that are being created
+            console.log(`Center with code ${centerCode} not found, creating temporary center info`);
+            centerInfo = {
+                centerCode: centerCode,
+                centerName: "New Center", // Will be updated when center is created
+                state: "", // Will be updated when center is created
+                city: ""  // Will be updated when center is created
+            };
+        } else {
+            centerInfo = center;
         }
+
+        console.log('Attempting to upload file to Cloudinary:', req.file.path);
 
         // Upload file to Cloudinary
         const result = await cloudinary.uploader.upload(req.file.path, {
             folder: "center_management_app",
-            resource_type: req.file.mimetype.startsWith("video/") ? "video" : "image"
+            resource_type: req.file.mimetype?.startsWith("video/") ? "video" : "image"
         });
 
+        console.log('Cloudinary upload successful:', result.secure_url);
+
+        // Delete the temporary file after successful upload
+        const fs = require('fs');
+        if (fs.existsSync(req.file.path)) {
+            fs.unlinkSync(req.file.path);
+            console.log('Temporary file deleted:', req.file.path);
+        }
+
         // Return response with all associated data
-        res.json({
+        res.status(200).json({
             message: "File uploaded successfully",
             fileUrl: result.secure_url,
+            public_id: result.public_id,
             fileType: result.resource_type,
             user: {
                 id: user._id,
@@ -50,13 +73,27 @@ export const uploadMedia = async (req, res) => {
                 email: user.email
             },
             center: {
-                code: center.centerCode,
-                name: center.centerName,
-                state: center.state,
-                city: center.city
+                code: centerInfo.centerCode,
+                name: centerInfo.centerName,
+                state: centerInfo.state,
+                city: centerInfo.city
             }
         });
     } catch (error) {
-        res.status(500).json({ message: "Server error", error: error.message });
+        console.error('Media upload error:', error);
+
+        // Delete the temporary file if upload fails
+        if (req.file && req.file.path) {
+            const fs = require('fs');
+            if (fs.existsSync(req.file.path)) {
+                fs.unlinkSync(req.file.path);
+                console.log('Temporary file deleted after error:', req.file.path);
+            }
+        }
+
+        res.status(500).json({
+            message: "Server error during media upload",
+            error: error.message
+        });
     }
 };

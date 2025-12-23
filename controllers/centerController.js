@@ -62,7 +62,7 @@ export const getCentersByName = async (req, res) => {
 // Create a new center
 export const createCenter = async (req, res) => {
     try {
-        const { centerCode, centerName, state, city, latitude, longitude, address, media } = req.body;
+        const { centerCode, centerName, state, city, latitude, longitude, address, media, biometricDeskCount } = req.body;
 
         // Check if center code already exists
         const existingCenter = await Center.findOne({ centerCode });
@@ -86,25 +86,36 @@ export const createCenter = async (req, res) => {
             };
         }
 
-        // Add media data if provided
-        if (media && Array.isArray(media)) {
-            // Process media with location data
-            const processedMedia = media.map(item => ({
-                url: item.url || item.uri,
-                publicId: item.publicId || '',
-                type: item.type || 'image',
-                originalName: item.name || item.originalName || 'unnamed',
-                ...(item.location && {
-                    location: {
-                        type: 'Point',
-                        coordinates: [
-                            parseFloat(item.location.longitude),
-                            parseFloat(item.location.latitude)
-                        ]
-                    }
-                }),
-                address: item.address || ''
-            }));
+        // Add biometric desk count if provided
+        if (biometricDeskCount) {
+            centerData.biometricDeskCount = biometricDeskCount;
+        }
+
+        // Add media data organized by category if provided
+        if (media) {
+            const processedMedia = {};
+
+            // Process each media category
+            for (const [category, mediaItems] of Object.entries(media)) {
+                if (Array.isArray(mediaItems)) {
+                    processedMedia[category] = mediaItems.map(item => ({
+                        url: item.url || item.uri,
+                        publicId: item.publicId || '',
+                        type: item.type || 'image',
+                        originalName: item.name || item.originalName || 'unnamed',
+                        ...(item.location && {
+                            location: {
+                                type: 'Point',
+                                coordinates: [
+                                    parseFloat(item.location.longitude),
+                                    parseFloat(item.location.latitude)
+                                ]
+                            }
+                        }),
+                        address: item.address || ''
+                    }));
+                }
+            }
 
             centerData.media = processedMedia;
         }

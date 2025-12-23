@@ -8,7 +8,27 @@ const mediaSchema = new mongoose.Schema({
     uploadedAt: {
         type: Date,
         default: Date.now
-    }
+    },
+    location: {
+        type: {
+            type: String,
+            default: 'Point'
+        },
+        coordinates: {
+            type: [Number], // [longitude, latitude]
+            index: '2dsphere'
+        },
+        address: String
+    },
+    address: String
+});
+
+const mediaCategorySchema = new mongoose.Schema({
+    entry: [mediaSchema],
+    passage: [mediaSchema],
+    biometricDeskSetup: [mediaSchema],
+    biometricDeskCount: [mediaSchema],
+    entryToPassage: [mediaSchema]
 });
 
 const locationSchema = new mongoose.Schema({
@@ -42,7 +62,8 @@ const centerSchema = new mongoose.Schema({
         required: true
     },
     location: locationSchema,
-    media: [mediaSchema]
+    biometricDeskCount: String,
+    media: mediaCategorySchema
 }, {
     timestamps: true
 });

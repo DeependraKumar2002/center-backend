@@ -12,14 +12,37 @@ import cors from "cors";
 dotenv.config();
 connectDB();
 const app = express();
-app.use(
-  cors({
-    origin: "*",
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true,
-    exposedHeaders: ["Authorization"],
-  })
-);
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    // For development, allow localhost origins
+    const allowedOrigins = [
+      'http://localhost:8081',  // Expo web default
+      'http://localhost:19006', // Expo default
+      'http://localhost:19000', // Expo default
+      'http://localhost:3000',  // Common React dev server
+      'http://localhost:3001',  // Alternative React dev server
+      'exp://localhost:19000',  // Expo app
+      'exp://127.0.0.1:19000',  // Expo app alternative
+      'https://center-mgt.onrender.com', // Production Render URL
+      'https://center-mgt-1.onrender.com'  // Alternative Render URL
+    ];
+
+    if (allowedOrigins.includes(origin) || process.env.NODE_ENV === 'production') {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  credentials: true,
+  optionsSuccessStatus: 200,
+  exposedHeaders: ["Authorization"],
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Test route

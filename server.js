@@ -1,5 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
+import cors from "cors";
+
 import connectDB from "./config/db.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -7,11 +9,24 @@ import stateRoutes from "./routes/stateRoutes.js";
 import cityRoutes from "./routes/cityRoutes.js";
 import centerRoutes from "./routes/centerRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
-import mediaRoutes from "./routes/mediaRoutes.js";
-import cors from "cors";
+import mediaRoutes from './routes/mediaRoutes.js';
+import userSubmissionRoutes from './routes/userSubmissionRoutes.js';
+
+/* =========================
+   ENV & DATABASE
+========================= */
 dotenv.config();
 connectDB();
+
+/* =========================
+   APP INIT
+========================= */
 const app = express();
+
+/* =========================
+   MIDDLEWARE
+========================= */
+
 const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
@@ -39,28 +54,42 @@ const corsOptions = {
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   credentials: true,
   optionsSuccessStatus: 200,
-  exposedHeaders: ["Authorization"],
+  allowedHeaders: ["Content-Type", "Authorization"],
 };
 
 app.use(cors(corsOptions));
-app.use(express.json());
 
-// Test route
-app.get('/', (req, res) => {
-  res.json({ message: 'Server is running!' });
+// Parse JSON body
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+/* =========================
+   HEALTH CHECK
+========================= */
+app.get("/", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Server is running",
+  });
 });
 
-// Routes
+/* =========================
+   ROUTES
+========================= */
 app.use("/upload", uploadRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/states", stateRoutes);
 app.use("/api/cities", cityRoutes);
 app.use("/api/centers", centerRoutes);
 app.use("/api/admin", adminRoutes);
-app.use("/api/media", mediaRoutes);
+app.use('/api/media', mediaRoutes);
+app.use('/api/user-submissions', userSubmissionRoutes);
 
+/* =========================
+   SERVER
+========================= */
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });

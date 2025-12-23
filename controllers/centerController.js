@@ -1,4 +1,5 @@
 import Center from '../models/Center.js';
+import UserSubmission from '../models/UserSubmission.js';
 
 // Get all centers
 export const getAllCenters = async (req, res) => {
@@ -70,12 +71,6 @@ export const createCenter = async (req, res) => {
             return res.status(401).json({ message: 'User email not found in token' });
         }
 
-        // Check if center code already exists
-        const existingCenter = await Center.findOne({ centerCode });
-        if (existingCenter) {
-            return res.status(400).json({ message: 'Center code already exists' });
-        }
-
         const centerData = {
             centerCode,
             centerName,
@@ -127,10 +122,31 @@ export const createCenter = async (req, res) => {
             centerData.media = processedMedia;
         }
 
-        const center = new Center(centerData);
-
-        const savedCenter = await center.save();
-        res.status(201).json(savedCenter);
+        // Create a user submission record (this will be the primary storage)
+        const userSubmissionData = {
+            submittedBy: userEmail,
+            centerData: {
+                centerCode,
+                centerName,
+                state,
+                city,
+                ...(latitude && longitude && {
+                    location: {
+                        type: 'Point',
+                        coordinates: [parseFloat(longitude), parseFloat(latitude)],
+                        address: address || ''
+                    }
+                }),
+                biometricDeskCount,
+                media
+            }
+        };
+                
+        const userSubmission = new UserSubmission(userSubmissionData);
+                
+        const savedSubmission = await userSubmission.save();
+                
+        res.status(201).json(savedSubmission);
     } catch (error) {
         res.status(400).json({ message: error.message });
     }
@@ -152,22 +168,25 @@ export const createCentersBulk = async (req, res) => {
             if (!center.centerCode || !center.centerName || !center.state || !center.city) {
                 return res.status(400).json({ message: 'Missing required fields in center data' });
             }
-
-            // Check if center code already exists
-            const existingCenter = await Center.findOne({ centerCode: center.centerCode });
-            if (existingCenter) {
-                return res.status(400).json({ message: `Center code ${center.centerCode} already exists` });
-            }
         }
 
-        // Add submittedBy field to each center
-        const centersWithUser = centers.map(center => ({
-            ...center,
-            submittedBy: userEmail
+        // Create user submission records (this will be the primary storage)
+        const userSubmissions = centers.map(center => ({
+            submittedBy: userEmail,
+            centerData: {
+                centerCode: center.centerCode,
+                centerName: center.centerName,
+                state: center.state,
+                city: center.city,
+                location: center.location,
+                biometricDeskCount: center.biometricDeskCount,
+                media: center.media
+            }
         }));
-
-        const savedCenters = await Center.insertMany(centersWithUser);
-        res.status(201).json(savedCenters);
+                
+        const savedSubmissions = await UserSubmission.insertMany(userSubmissions);
+                
+        res.status(201).json(savedSubmissions);
     } catch (error) {
         res.status(400).json({ message: error.message });
     }

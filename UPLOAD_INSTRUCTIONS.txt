@@ -1,0 +1,52 @@
+INSTRUCTIONS FOR UPLOADING DATA VIA CSV
+
+1. USE THE SINGLE COMBINED UPLOAD SECTION IN THE ADMIN PANEL
+
+The admin panel now has only one upload section that handles both centers and users in a single CSV file.
+
+2. CSV FILE FORMAT
+
+Your CSV file must have these exact column headers:
+type,centerCode,centerName,state,city,username,email,password
+
+3. DATA ENTRY RULES
+
+For CENTER entries:
+- Column "type" must contain the value "center"
+- Columns "centerCode", "centerName", "state", and "city" must be filled
+- Columns "username", "email", and "password" should be left empty
+
+Example:
+center,MH001,Mumbai Central Center,Maharashtra,Mumbai,,,
+
+For USER entries:
+- Column "type" must contain the value "user"
+- Columns "username", "email", and "password" must be filled
+- Columns "centerCode", "centerName", "state", and "city" should be left empty
+
+Example:
+user,,,,,john_doe,john@example.com,securePassword123
+
+4. UPLOAD PROCESS
+
+1. Prepare your CSV file following the format above
+2. Open the Admin Panel in your browser
+3. Click "Choose File" under the "Upload Combined CSV" section
+4. Select your CSV file
+5. Click "Upload Combined Data"
+6. Wait for the success message
+
+5. VERIFICATION
+
+After uploading, you can verify the data was imported correctly by:
+1. Using the "View Data" section in the admin panel
+2. Selecting the data type you want to view (Users or Centers)
+3. Checking that your data appears in the table
+
+6. ERROR HANDLING
+
+If you receive an error message:
+1. Check that your CSV file follows the exact format
+2. Ensure there are no extra commas or missing required fields
+3. Verify that usernames and center codes are unique
+4. Check that passwords meet security requirements

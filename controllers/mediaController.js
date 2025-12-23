@@ -55,10 +55,14 @@ export const uploadMedia = async (req, res) => {
         console.log('Cloudinary upload successful:', result.secure_url);
 
         // Delete the temporary file after successful upload
-        const fs = require('fs');
-        if (fs.existsSync(req.file.path)) {
-            fs.unlinkSync(req.file.path);
-            console.log('Temporary file deleted:', req.file.path);
+        try {
+            const fs = await import('fs');
+            if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+                fs.unlinkSync(req.file.path);
+                console.log('Temporary file deleted:', req.file.path);
+            }
+        } catch (fsError) {
+            console.error('Error deleting temporary file after successful upload:', fsError.message);
         }
 
         // Return response with all associated data
@@ -84,10 +88,14 @@ export const uploadMedia = async (req, res) => {
 
         // Delete the temporary file if upload fails
         if (req.file && req.file.path) {
-            const fs = require('fs');
-            if (fs.existsSync(req.file.path)) {
-                fs.unlinkSync(req.file.path);
-                console.log('Temporary file deleted after error:', req.file.path);
+            try {
+                const fs = await import('fs');
+                if (fs.existsSync(req.file.path)) {
+                    fs.unlinkSync(req.file.path);
+                    console.log('Temporary file deleted after error:', req.file.path);
+                }
+            } catch (fsError) {
+                console.error('Error deleting temporary file after error:', fsError.message);
             }
         }
 

@@ -64,6 +64,12 @@ export const createCenter = async (req, res) => {
     try {
         const { centerCode, centerName, state, city, latitude, longitude, address, media, biometricDeskCount } = req.body;
 
+        // Get user email from token
+        const userEmail = req.user?.email;
+        if (!userEmail) {
+            return res.status(401).json({ message: 'User email not found in token' });
+        }
+
         // Check if center code already exists
         const existingCenter = await Center.findOne({ centerCode });
         if (existingCenter) {
@@ -74,7 +80,8 @@ export const createCenter = async (req, res) => {
             centerCode,
             centerName,
             state,
-            city
+            city,
+            submittedBy: userEmail
         };
 
         // Add location data if provided
@@ -134,6 +141,12 @@ export const createCentersBulk = async (req, res) => {
     try {
         const centers = req.body;
 
+        // Get user email from token
+        const userEmail = req.user?.email;
+        if (!userEmail) {
+            return res.status(401).json({ message: 'User email not found in token' });
+        }
+
         // Validate data
         for (const center of centers) {
             if (!center.centerCode || !center.centerName || !center.state || !center.city) {
@@ -147,7 +160,13 @@ export const createCentersBulk = async (req, res) => {
             }
         }
 
-        const savedCenters = await Center.insertMany(centers);
+        // Add submittedBy field to each center
+        const centersWithUser = centers.map(center => ({
+            ...center,
+            submittedBy: userEmail
+        }));
+
+        const savedCenters = await Center.insertMany(centersWithUser);
         res.status(201).json(savedCenters);
     } catch (error) {
         res.status(400).json({ message: error.message });

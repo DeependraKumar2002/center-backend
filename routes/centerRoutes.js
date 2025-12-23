@@ -8,6 +8,7 @@ import {
     createCenter,
     createCentersBulk
 } from '../controllers/centerController.js';
+import { verifyToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -27,9 +28,9 @@ router.get('/code/:code', getCenterByCode);
 router.get('/name/:name', getCentersByName);
 
 // POST /api/centers
-router.post('/', createCenter);
+router.post('/', verifyToken, createCenter);
 
 // POST /api/centers/bulk
-router.post('/bulk', createCentersBulk);
+router.post('/bulk', verifyToken, createCentersBulk);
 
 export default router;

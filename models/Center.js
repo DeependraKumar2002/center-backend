@@ -61,6 +61,10 @@ const centerSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    submittedBy: {
+        type: String,
+        required: true
+    },
     location: locationSchema,
     biometricDeskCount: String,
     media: mediaCategorySchema

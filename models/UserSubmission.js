@@ -1,36 +1,6 @@
 import mongoose from 'mongoose';
 
-const mediaSchema = new mongoose.Schema({
-    url: String,
-    publicId: String,
-    type: String, // 'image' or 'video'
-    originalName: String,
-    uploadedAt: {
-        type: Date,
-        default: Date.now
-    },
-    location: {
-        type: {
-            type: String,
-            default: 'Point'
-        },
-        coordinates: {
-            type: [Number], // [longitude, latitude]
-            index: '2dsphere'
-        },
-        address: String
-    },
-    address: String
-});
-
-const mediaCategorySchema = new mongoose.Schema({
-    entry: [mediaSchema],
-    passage: [mediaSchema],
-    biometricDeskSetup: [mediaSchema],
-    biometricDeskCount: [mediaSchema],
-    entryToPassage: [mediaSchema]
-});
-
+// Define location schema first to avoid circular reference
 const locationSchema = new mongoose.Schema({
     type: {
         type: String,
@@ -41,6 +11,27 @@ const locationSchema = new mongoose.Schema({
         index: '2dsphere'
     },
     address: String
+});
+
+const mediaSchema = new mongoose.Schema({
+    url: String,
+    publicId: String,
+    type: String, // 'image' or 'video'
+    originalName: String,
+    uploadedAt: {
+        type: Date,
+        default: Date.now
+    },
+    location: locationSchema,
+    address: String
+});
+
+const mediaCategorySchema = new mongoose.Schema({
+    entry: [mediaSchema],
+    passage: [mediaSchema],
+    biometricDeskSetup: [mediaSchema],
+    biometricDeskCount: [mediaSchema],
+    entryToPassage: [mediaSchema]
 });
 
 const userSubmissionSchema = new mongoose.Schema({

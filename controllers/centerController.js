@@ -64,6 +64,7 @@ export const getCentersByName = async (req, res) => {
 export const createCenter = async (req, res) => {
     try {
         const { centerCode, centerName, state, city, latitude, longitude, address, media, biometricDeskCount } = req.body;
+        console.log('Received data:', { centerCode, centerName, state, city, latitude, longitude, address, biometricDeskCount });
 
         // Get user email from token
         const userEmail = req.user?.email;
@@ -123,6 +124,35 @@ export const createCenter = async (req, res) => {
         }
 
         // Create a user submission record (this will be the primary storage)
+        console.log('Location data from request:', { latitude, longitude, address });
+
+        // Extract location from media if main location is missing
+        let finalLatitude = latitude;
+        let finalLongitude = longitude;
+        let finalAddress = address;
+
+        // If main location is missing, try to get from media files
+        if ((!finalLatitude || !finalLongitude) && media) {
+            // Look for location in any media category
+            const mediaCategories = ['entry', 'passage', 'biometricDeskSetup', 'biometricDeskCount', 'entryToPassage'];
+
+            for (const category of mediaCategories) {
+                if (media[category] && media[category].length > 0) {
+                    const firstMediaWithLocation = media[category].find(item =>
+                        item.location && item.location.latitude && item.location.longitude
+                    );
+
+                    if (firstMediaWithLocation) {
+                        finalLatitude = firstMediaWithLocation.location.latitude;
+                        finalLongitude = firstMediaWithLocation.location.longitude;
+                        finalAddress = firstMediaWithLocation.address || finalAddress;
+                        console.log('Using location from media:', { finalLatitude, finalLongitude, finalAddress });
+                        break;
+                    }
+                }
+            }
+        }
+
         const userSubmissionData = {
             submittedBy: userEmail,
             centerData: {
@@ -130,22 +160,27 @@ export const createCenter = async (req, res) => {
                 centerName,
                 state,
                 city,
-                ...(latitude && longitude && {
+                ...(finalLatitude && finalLongitude && {
                     location: {
                         type: 'Point',
-                        coordinates: [parseFloat(longitude), parseFloat(latitude)],
-                        address: address || ''
+                        coordinates: [
+                            typeof finalLongitude === 'number' ? finalLongitude : parseFloat(finalLongitude),
+                            typeof finalLatitude === 'number' ? finalLatitude : parseFloat(finalLatitude)
+                        ],
+                        address: finalAddress || ''
                     }
                 }),
                 biometricDeskCount,
                 media
             }
         };
-                
+
+        console.log('Final userSubmissionData:', JSON.stringify(userSubmissionData, null, 2));
+
         const userSubmission = new UserSubmission(userSubmissionData);
-                
+
         const savedSubmission = await userSubmission.save();
-                
+
         res.status(201).json(savedSubmission);
     } catch (error) {
         res.status(400).json({ message: error.message });
@@ -183,9 +218,9 @@ export const createCentersBulk = async (req, res) => {
                 media: center.media
             }
         }));
-                
+
         const savedSubmissions = await UserSubmission.insertMany(userSubmissions);
-                
+
         res.status(201).json(savedSubmissions);
     } catch (error) {
         res.status(400).json({ message: error.message });

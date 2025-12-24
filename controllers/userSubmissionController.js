@@ -1,4 +1,6 @@
 import UserSubmission from '../models/UserSubmission.js';
+import { verifyToken } from '../middleware/auth.js';
+
 
 // Get all user submissions (for admin)
 export const getUserSubmissions = async (req, res) => {
@@ -21,6 +23,24 @@ export const getUserSubmissionByUser = async (req, res) => {
 
         const submissions = await UserSubmission.find({ submittedBy: userEmail })
             .sort({ submittedAt: -1 });
+        res.json(submissions);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// Get public submissions (without user email for privacy)
+export const getPublicSubmissions = async (req, res) => {
+    try {
+        // Fetch submissions but exclude the submittedBy field for privacy
+        const submissions = await UserSubmission.find({}, {
+            'centerData': 1,
+            'submittedAt': 1,
+            'createdAt': 1,
+            'updatedAt': 1
+        })
+            .sort({ submittedAt: -1 });
+
         res.json(submissions);
     } catch (error) {
         res.status(500).json({ message: error.message });

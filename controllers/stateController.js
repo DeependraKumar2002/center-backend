@@ -1,10 +1,13 @@
 import State from '../models/State.js';
+import Center from '../models/Center.js';
 
-// Get all states
+// Get all states - dynamically generated from centers
 export const getAllStates = async (req, res) => {
     try {
-        const states = await State.find().sort({ name: 1 });
-        res.json(states);
+        // Get unique states from centers collection
+        const states = await Center.distinct('state');
+        const stateObjects = states.map(name => ({ name, _id: name })); // Create objects with name property for frontend compatibility
+        res.json(stateObjects);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

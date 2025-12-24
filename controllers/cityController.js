@@ -1,21 +1,26 @@
 import City from '../models/City.js';
+import Center from '../models/Center.js';
 
-// Get all cities
+// Get all cities - dynamically generated from centers
 export const getAllCities = async (req, res) => {
     try {
-        const cities = await City.find().sort({ name: 1 });
-        res.json(cities);
+        // Get unique cities from centers collection
+        const cities = await Center.distinct('city');
+        const cityObjects = cities.map(name => ({ name, _id: name })); // Create objects with name property for frontend compatibility
+        res.json(cityObjects);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
 
-// Get cities by state
+// Get cities by state - dynamically generated from centers
 export const getCitiesByState = async (req, res) => {
     try {
         const { state } = req.params;
-        const cities = await City.find({ state: state }).sort({ name: 1 });
-        res.json(cities);
+        // Get unique cities for the specified state from centers collection
+        const cities = await Center.distinct('city', { state: state });
+        const cityObjects = cities.map(name => ({ name, _id: name, state })); // Include state for frontend compatibility
+        res.json(cityObjects);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

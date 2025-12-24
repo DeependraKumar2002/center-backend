@@ -181,6 +181,21 @@ export const createCenter = async (req, res) => {
 
         const savedSubmission = await userSubmission.save();
 
+        // Also save to the main Center collection for state/city lookup
+        const centerForLookup = {
+            centerCode,
+            centerName,
+            state,
+            city,
+            submittedBy: userEmail
+        };
+
+        await Center.updateOne(
+            { centerCode: centerCode },
+            { ...centerForLookup },
+            { upsert: true } // Create if doesn't exist, update if exists
+        );
+
         res.status(201).json(savedSubmission);
     } catch (error) {
         res.status(400).json({ message: error.message });
@@ -220,6 +235,24 @@ export const createCentersBulk = async (req, res) => {
         }));
 
         const savedSubmissions = await UserSubmission.insertMany(userSubmissions);
+
+        // Also save to the main Center collection for state/city lookup
+        const centersForLookup = centers.map(center => ({
+            centerCode: center.centerCode,
+            centerName: center.centerName,
+            state: center.state,
+            city: center.city,
+            submittedBy: userEmail
+        }));
+
+        // Insert or update centers in the main collection
+        for (const center of centersForLookup) {
+            await Center.updateOne(
+                { centerCode: center.centerCode },
+                { ...center },
+                { upsert: true } // Create if doesn't exist, update if exists
+            );
+        }
 
         res.status(201).json(savedSubmissions);
     } catch (error) {

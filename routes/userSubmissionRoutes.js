@@ -10,15 +10,15 @@ import { verifyToken } from '../middleware/auth.js';
 const router = express.Router();
 
 // GET /api/user-submissions - Get all user submissions (admin only)
-router.get('/', verifyToken, getUserSubmissions);
+router.get('/', getUserSubmissions);
 
 // GET /api/user-submissions/public - Get public submissions (no auth required)
 router.get('/public', getPublicSubmissions);
 
 // GET /api/user-submissions/my - Get current user's submissions
-router.get('/my', verifyToken, getUserSubmissionByUser);
+router.get('/my', getUserSubmissionByUser);
 
 // DELETE /api/user-submissions/:id - Delete a submission
-router.delete('/:id', verifyToken, deleteUserSubmission);
+router.delete('/:id', deleteUserSubmission);
 
 export default router;

@@ -12,6 +12,7 @@ import adminRoutes from "./routes/adminRoutes.js";
 import mediaRoutes from './routes/mediaRoutes.js';
 import userSubmissionRoutes from './routes/userSubmissionRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
+import adminAuthRoutes from './routes/adminAuthRoutes.js';
 
 /* =========================
    ENV & DATABASE
@@ -86,12 +87,13 @@ app.use("/api/admin", adminRoutes);
 app.use('/api/media', mediaRoutes);
 app.use('/api/user-submissions', userSubmissionRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/admin-auth', adminAuthRoutes);
 
 /* =========================
    SERVER
 ========================= */
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });

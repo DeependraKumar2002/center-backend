@@ -74,3 +74,41 @@ export const deleteUserSubmission = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+// Update a user submission
+export const updateUserSubmission = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { centerData } = req.body;
+        const userEmail = req.user?.email;
+
+        if (!userEmail) {
+            return res.status(401).json({ message: 'User email not found in token' });
+        }
+
+        // Check if user is authorized to update this submission
+        const submission = await UserSubmission.findById(id);
+        if (!submission) {
+            return res.status(404).json({ message: 'Submission not found' });
+        }
+
+        // User can only update their own submissions
+        if (submission.submittedBy !== userEmail) {
+            return res.status(403).json({ message: 'Not authorized to update this submission' });
+        }
+
+        // Update the submission
+        const updatedSubmission = await UserSubmission.findByIdAndUpdate(
+            id,
+            {
+                centerData,
+                updatedAt: new Date()
+            },
+            { new: true }
+        );
+
+        res.json(updatedSubmission);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};

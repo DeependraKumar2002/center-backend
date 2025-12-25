@@ -3,7 +3,8 @@ import {
     getUserSubmissions,
     getUserSubmissionByUser,
     deleteUserSubmission,
-    getPublicSubmissions
+    getPublicSubmissions,
+    updateUserSubmission
 } from '../controllers/userSubmissionController.js';
 import { verifyToken } from '../middleware/auth.js';
 
@@ -17,6 +18,9 @@ router.get('/public', getPublicSubmissions);
 
 // GET /api/user-submissions/my - Get current user's submissions
 router.get('/my', getUserSubmissionByUser);
+
+// PUT /api/user-submissions/:id - Update a submission
+router.put('/:id', updateUserSubmission);
 
 // DELETE /api/user-submissions/:id - Delete a submission
 router.delete('/:id', deleteUserSubmission);

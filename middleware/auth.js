@@ -29,3 +29,6 @@ export const verifyToken = (req, res, next) => {
         res.status(401).json({ message: "Token is not valid" });
     }
 };
+
+// Export as 'protect' as well to match the original reference
+export const protect = verifyToken;

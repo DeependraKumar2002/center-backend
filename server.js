@@ -11,6 +11,7 @@ import centerRoutes from "./routes/centerRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import mediaRoutes from './routes/mediaRoutes.js';
 import userSubmissionRoutes from './routes/userSubmissionRoutes.js';
+import dashboardRoutes from './routes/dashboardRoutes.js';
 
 /* =========================
    ENV & DATABASE
@@ -84,6 +85,7 @@ app.use("/api/centers", centerRoutes);
 app.use("/api/admin", adminRoutes);
 app.use('/api/media', mediaRoutes);
 app.use('/api/user-submissions', userSubmissionRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 /* =========================
    SERVER

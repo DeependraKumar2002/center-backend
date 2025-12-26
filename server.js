@@ -31,33 +31,12 @@ const app = express();
 ========================= */
 
 const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-
-    // For development, allow localhost origins
-    const allowedOrigins = [
-      'http://localhost:8081',  // Expo web default
-      'http://localhost:19006', // Expo default
-      'http://localhost:19000', // Expo default
-      'http://localhost:3000',  // Common React dev server
-      'http://localhost:3001',  // Alternative React dev server
-      'exp://localhost:19000',  // Expo app
-      'exp://127.0.0.1:19000',  // Expo app alternative
-      'https://center-mgt.onrender.com', // Production Render URL
-      'https://center-mgt-1.onrender.com'  // Alternative Render URL
-    ];
-
-    if (allowedOrigins.includes(origin) || process.env.NODE_ENV === 'production') {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  credentials: true,
+  origin: '*', // Allow all origins for public access
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+  credentials: false, // Set to false when allowing all origins
   optionsSuccessStatus: 200,
-  allowedHeaders: ["Content-Type", "Authorization"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  exposedHeaders: ["Content-Range", "X-Content-Range"],
 };
 
 app.use(cors(corsOptions));
@@ -103,14 +82,13 @@ const PORT = process.env.PORT || 5000;
 // Keep-alive mechanism for platforms like Render
 if (process.env.NODE_ENV === 'production') {
   setInterval(() => {
-    const baseUrl = process.env.RENDER_EXTERNAL_URL
-      ? `https://${process.env.RENDER_EXTERNAL_URL}`
-      : `http://localhost:${PORT}`;
+    // Use the actual deployed URL for pings in production
+    const baseUrl = `https://center-mgt-1.onrender.com`;
 
     fetch(`${baseUrl}/ping`)
       .then(() => console.log('Ping successful - server kept alive'))
       .catch(err => console.log('Ping failed:', err.message));
-  }, 5 * 60 * 1000); // Ping every 5 minutes
+  }, 4 * 60 * 1000); // Ping every 4 minutes
 }
 
 const server = app.listen(PORT, '0.0.0.0', () => {

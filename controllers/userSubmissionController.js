@@ -14,6 +14,21 @@ export const getUserSubmissions = async (req, res) => {
     }
 };
 
+// Get user's own submissions
+export const getUserOwnSubmissions = async (req, res) => {
+    try {
+        const userEmail = req.user.email;
+
+        const submissions = await UserSubmission.find({
+            submittedBy: userEmail
+        })
+            .sort({ submittedAt: -1 });
+        res.json(submissions);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 // Get public submissions (without user email for privacy)
 export const getPublicSubmissions = async (req, res) => {
     try {

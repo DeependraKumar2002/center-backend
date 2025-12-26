@@ -5,7 +5,8 @@ import {
     getUserSubmissionByDate,
     getUserSubmissionById,
     updateSubmission,
-    checkTodaySubmission
+    checkTodaySubmission,
+    getUserOwnSubmissions
 } from '../controllers/userSubmissionController.js';
 import { verifyToken } from '../middleware/auth.js';
 
@@ -13,6 +14,9 @@ const router = express.Router();
 
 // GET /api/user-submissions - Get all user submissions (admin only)
 router.get('/', verifyToken, getUserSubmissions);
+
+// GET /api/user-submissions/own - Get user's own submissions
+router.get('/own', verifyToken, getUserOwnSubmissions);
 
 // GET /api/user-submissions/public - Get public submissions (no auth required)
 router.get('/public', getPublicSubmissions);

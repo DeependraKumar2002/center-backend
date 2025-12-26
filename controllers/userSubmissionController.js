@@ -85,6 +85,28 @@ export const getUserSubmissionByDate = async (req, res) => {
     }
 };
 
+// Get user submission by ID
+export const getUserSubmissionById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userEmail = req.user.email;
+
+        // Verify that the submission belongs to the user
+        const submission = await UserSubmission.findOne({
+            _id: id,
+            submittedBy: userEmail
+        });
+
+        if (!submission) {
+            return res.status(404).json({ message: 'Submission not found or does not belong to user' });
+        }
+
+        res.json(submission);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 // Update user submission
 export const updateSubmission = async (req, res) => {
     try {

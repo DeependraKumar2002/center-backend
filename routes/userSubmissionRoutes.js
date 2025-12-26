@@ -3,6 +3,7 @@ import {
     getUserSubmissions,
     getPublicSubmissions,
     getUserSubmissionByDate,
+    getUserSubmissionById,
     updateSubmission,
     checkTodaySubmission
 } from '../controllers/userSubmissionController.js';
@@ -21,6 +22,9 @@ router.get('/today', verifyToken, checkTodaySubmission);
 
 // GET /api/user-submissions/date/:date - Get user submission for a specific date
 router.get('/date/:date', verifyToken, getUserSubmissionByDate);
+
+// GET /api/user-submissions/:id - Get user submission by ID
+router.get('/:id', verifyToken, getUserSubmissionById);
 
 // PUT /api/user-submissions/:id - Update user submission
 router.put('/:id', verifyToken, updateSubmission);

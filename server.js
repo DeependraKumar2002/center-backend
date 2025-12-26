@@ -46,8 +46,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 /* =========================
-   HEALTH CHECK
+   HEALTH CHECK - Defined before routes to ensure accessibility
 ========================= */
+// Root endpoint
 app.get("/", (req, res) => {
   res.status(200).json({
     success: true,
@@ -58,6 +59,15 @@ app.get("/", (req, res) => {
 // Keep server alive with ping endpoint
 app.get('/ping', (req, res) => {
   res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+// Additional health check endpoints
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
 });
 
 /* =========================
@@ -80,14 +90,13 @@ app.use('/api/admin-auth', adminAuthRoutes);
 const PORT = process.env.PORT || 5000;
 
 // Keep-alive mechanism for platforms like Render
+// Ping the internal server to keep it awake
 if (process.env.NODE_ENV === 'production') {
   setInterval(() => {
-    // Use the actual deployed URL for pings in production
-    const baseUrl = `https://center-mgt-1.onrender.com`;
-
-    fetch(`${baseUrl}/ping`)
-      .then(() => console.log('Ping successful - server kept alive'))
-      .catch(err => console.log('Ping failed:', err.message));
+    // Use internal address to ping the server directly
+    fetch(`http://localhost:${PORT}/ping`)
+      .then(() => console.log('Internal ping successful - server kept alive'))
+      .catch(err => console.log('Internal ping failed:', err.message));
   }, 4 * 60 * 1000); // Ping every 4 minutes
 }
 

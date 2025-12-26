@@ -1,6 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
+import fetch from 'node-fetch';
 
 import connectDB from "./config/db.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
@@ -75,6 +76,11 @@ app.get("/", (req, res) => {
   });
 });
 
+// Keep server alive with ping endpoint
+app.get('/ping', (req, res) => {
+  res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
 /* =========================
    ROUTES
 ========================= */
@@ -94,6 +100,34 @@ app.use('/api/admin-auth', adminAuthRoutes);
 ========================= */
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, '0.0.0.0', () => {
+// Keep-alive mechanism for platforms like Render
+if (process.env.NODE_ENV === 'production') {
+  setInterval(() => {
+    const baseUrl = process.env.RENDER_EXTERNAL_URL
+      ? `https://${process.env.RENDER_EXTERNAL_URL}`
+      : `http://localhost:${PORT}`;
+
+    fetch(`${baseUrl}/ping`)
+      .then(() => console.log('Ping successful - server kept alive'))
+      .catch(err => console.log('Ping failed:', err.message));
+  }, 5 * 60 * 1000); // Ping every 5 minutes
+}
+
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
+});
+
+// Handle graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  server.close(() => {
+    console.log('Process terminated');
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down gracefully');
+  server.close(() => {
+    console.log('Process terminated');
+  });
 });

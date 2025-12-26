@@ -1,28 +1,28 @@
 import express from 'express';
 import {
     getUserSubmissions,
-    getUserSubmissionByUser,
-    deleteUserSubmission,
     getPublicSubmissions,
-    updateUserSubmission
+    getUserSubmissionByDate,
+    updateSubmission,
+    checkTodaySubmission
 } from '../controllers/userSubmissionController.js';
 import { verifyToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
 // GET /api/user-submissions - Get all user submissions (admin only)
-router.get('/', getUserSubmissions);
+router.get('/', verifyToken, getUserSubmissions);
 
 // GET /api/user-submissions/public - Get public submissions (no auth required)
 router.get('/public', getPublicSubmissions);
 
-// GET /api/user-submissions/my - Get current user's submissions
-router.get('/my', getUserSubmissionByUser);
+// GET /api/user-submissions/today - Check if user has submitted today
+router.get('/today', verifyToken, checkTodaySubmission);
 
-// PUT /api/user-submissions/:id - Update a submission
-router.put('/:id', updateUserSubmission);
+// GET /api/user-submissions/date/:date - Get user submission for a specific date
+router.get('/date/:date', verifyToken, getUserSubmissionByDate);
 
-// DELETE /api/user-submissions/:id - Delete a submission
-router.delete('/:id', deleteUserSubmission);
+// PUT /api/user-submissions/:id - Update user submission
+router.put('/:id', verifyToken, updateSubmission);
 
 export default router;

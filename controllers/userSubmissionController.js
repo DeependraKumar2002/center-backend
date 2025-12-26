@@ -1,27 +1,12 @@
 import UserSubmission from '../models/UserSubmission.js';
 import { verifyToken } from '../middleware/auth.js';
+import moment from 'moment';
 
 
 // Get all user submissions (for admin)
 export const getUserSubmissions = async (req, res) => {
     try {
         const submissions = await UserSubmission.find()
-            .sort({ submittedAt: -1 });
-        res.json(submissions);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-// Get current user's submissions
-export const getUserSubmissionByUser = async (req, res) => {
-    try {
-        const userEmail = req.user?.email;
-        if (!userEmail) {
-            return res.status(401).json({ message: 'User email not found in token' });
-        }
-
-        const submissions = await UserSubmission.find({ submittedBy: userEmail })
             .sort({ submittedAt: -1 });
         res.json(submissions);
     } catch (error) {
@@ -47,61 +32,83 @@ export const getPublicSubmissions = async (req, res) => {
     }
 };
 
-// Delete a user submission
-export const deleteUserSubmission = async (req, res) => {
+// Check if user has submitted today
+export const checkTodaySubmission = async (req, res) => {
     try {
-        const { id } = req.params;
-        const userEmail = req.user?.email;
+        const userEmail = req.user.email;
+        const today = moment().startOf('day');
+        const tomorrow = moment(today).add(1, 'day');
 
-        if (!userEmail) {
-            return res.status(401).json({ message: 'User email not found in token' });
+        const submission = await UserSubmission.findOne({
+            submittedBy: userEmail,
+            submittedAt: {
+                $gte: today.toDate(),
+                $lt: tomorrow.toDate()
+            }
+        });
+
+        if (submission) {
+            res.json({ hasSubmitted: true, submissionId: submission._id });
+        } else {
+            res.json({ hasSubmitted: false });
         }
-
-        // Check if user is authorized to delete this submission
-        const submission = await UserSubmission.findById(id);
-        if (!submission) {
-            return res.status(404).json({ message: 'Submission not found' });
-        }
-
-        // User can only delete their own submissions
-        if (submission.submittedBy !== userEmail) {
-            return res.status(403).json({ message: 'Not authorized to delete this submission' });
-        }
-
-        await UserSubmission.findByIdAndDelete(id);
-        res.json({ message: 'Submission deleted successfully' });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
 
-// Update a user submission
-export const updateUserSubmission = async (req, res) => {
+// Get user submission for a specific date
+export const getUserSubmissionByDate = async (req, res) => {
+    try {
+        const userEmail = req.user.email;
+        const date = req.params.date;
+
+        // Parse the date string to a Date object
+        const startOfDay = moment(date).startOf('day');
+        const endOfDay = moment(startOfDay).endOf('day');
+
+        const submission = await UserSubmission.findOne({
+            submittedBy: userEmail,
+            submittedAt: {
+                $gte: startOfDay.toDate(),
+                $lte: endOfDay.toDate()
+            }
+        });
+
+        if (submission) {
+            res.json(submission);
+        } else {
+            res.status(404).json({ message: 'No submission found for this date' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// Update user submission
+export const updateSubmission = async (req, res) => {
     try {
         const { id } = req.params;
+        const userEmail = req.user.email;
         const { centerData } = req.body;
-        const userEmail = req.user?.email;
 
-        if (!userEmail) {
-            return res.status(401).json({ message: 'User email not found in token' });
-        }
+        // Verify that the submission belongs to the user
+        const submission = await UserSubmission.findOne({
+            _id: id,
+            submittedBy: userEmail
+        });
 
-        // Check if user is authorized to update this submission
-        const submission = await UserSubmission.findById(id);
         if (!submission) {
-            return res.status(404).json({ message: 'Submission not found' });
-        }
-
-        // User can only update their own submissions
-        if (submission.submittedBy !== userEmail) {
-            return res.status(403).json({ message: 'Not authorized to update this submission' });
+            return res.status(404).json({ message: 'Submission not found or does not belong to user' });
         }
 
         // Update the submission
-        const updatedSubmission = await UserSubmission.findByIdAndUpdate(
-            id,
+        const updatedSubmission = await UserSubmission.findOneAndUpdate(
+            { _id: id, submittedBy: userEmail },
             {
-                centerData,
+                centerData: {
+                    ...centerData
+                },
                 updatedAt: new Date()
             },
             { new: true }
@@ -112,3 +119,5 @@ export const updateUserSubmission = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+

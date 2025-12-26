@@ -1,5 +1,6 @@
 import Center from '../models/Center.js';
 import UserSubmission from '../models/UserSubmission.js';
+import moment from 'moment';
 
 // Get all centers
 export const getAllCenters = async (req, res) => {
@@ -70,6 +71,24 @@ export const createCenter = async (req, res) => {
         const userEmail = req.user?.email;
         if (!userEmail) {
             return res.status(401).json({ message: 'User email not found in token' });
+        }
+
+        // Check if user has already submitted today
+        const today = moment().startOf('day');
+        const tomorrow = moment(today).add(1, 'day');
+
+        const existingSubmission = await UserSubmission.findOne({
+            submittedBy: userEmail,
+            submittedAt: {
+                $gte: today.toDate(),
+                $lt: tomorrow.toDate()
+            }
+        });
+
+        if (existingSubmission) {
+            return res.status(400).json({
+                message: 'You have already submitted a form today. Please edit your existing submission instead.'
+            });
         }
 
         const centerData = {

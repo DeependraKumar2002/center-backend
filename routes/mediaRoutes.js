@@ -1,14 +1,22 @@
 import express from "express";
 import { uploadMedia } from "../controllers/mediaController.js";
 import multer from "multer";
-import { verifyToken } from "../middleware/auth.js";
+
 
 const router = express.Router();
 
-// Configure multer for file upload
+// Configure multer for file upload with increased limits for deployed environments
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, "uploads/");
+        // In deployed environments, ensure uploads directory exists
+        const fs = require('fs');
+        const uploadDir = 'uploads/';
+
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+
+        cb(null, uploadDir);
     },
     filename: function (req, file, cb) {
         cb(null, Date.now() + "-" + file.originalname);
@@ -18,11 +26,14 @@ const storage = multer.diskStorage({
 const upload = multer({
     storage: storage,
     limits: {
-        fileSize: 50 * 1024 * 1024 // 50MB limit
+        fileSize: 50 * 1024 * 1024, // 50MB limit
+        fieldSize: 50 * 1024 * 1024, // 50MB field size limit
+        fields: 10, // Max number of non-file fields
+        parts: 100, // Max number of parts (files + fields)
     }
 });
 
-// POST /media/upload - Protected route
-router.post("/upload", verifyToken, upload.single("mediaFile"), uploadMedia);
+// POST /media/upload - Public route
+router.post("/upload", upload.single("mediaFile"), uploadMedia);
 
 export default router;

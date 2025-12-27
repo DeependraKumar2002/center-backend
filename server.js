@@ -41,9 +41,9 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// Parse JSON body
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Parse JSON body with increased limits for file uploads
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 /* =========================
    HEALTH CHECK - Defined before routes to ensure accessibility
@@ -97,13 +97,14 @@ if (process.env.NODE_ENV === 'production') {
     fetch(`http://localhost:${PORT}/ping`)
       .then(() => console.log('Internal ping successful - server kept alive'))
       .catch(err => console.log('Internal ping failed:', err.message));
-  }, 2 * 60 * 1000); // Ping every 2 minutes (more aggressive)
+  }, 5 * 60 * 1000); // Ping every 5 minutes (more aggressive)
 }
 
 // Increase timeout settings for long-running requests
 app.use((req, res, next) => {
-  req.setTimeout(300000); // 5 minutes
-  res.setTimeout(300000); // 5 minutes
+  req.setTimeout(600000); // 10 minutes
+
+  res.setTimeout(600000); // 10 minutes
   next();
 });
 
@@ -112,7 +113,7 @@ const server = app.listen(PORT, '0.0.0.0', () => {
 });
 
 // Set server timeout for idle connections
-server.timeout = 300000; // 5 minutes
+server.timeout = 600000; // 10 minutes
 
 // Handle graceful shutdown
 process.on('SIGTERM', () => {

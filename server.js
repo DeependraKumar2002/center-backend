@@ -115,13 +115,14 @@ app.use('/api/admin-auth', adminAuthRoutes);
 const PORT = process.env.PORT || 5000;
 
 // Keep-alive mechanism for platforms like Render
-// Ping the internal server to keep it awake more frequently
+// Ping the server to keep it awake more frequently
 if (process.env.NODE_ENV === 'production') {
   setInterval(() => {
-    // Use internal address to ping the server directly
-    fetch(`http://localhost:${PORT}/ping`)
-      .then(() => console.log('Internal ping successful - server kept alive'))
-      .catch(err => console.log('Internal ping failed:', err.message));
+    // Use the actual server URL for production environments
+    const serverUrl = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+    fetch(`${serverUrl}/ping`)
+      .then(() => console.log('External ping successful - server kept alive'))
+      .catch(err => console.log('External ping failed:', err.message));
   }, 5 * 60 * 1000); // Ping every 5 minutes (more aggressive)
 }
 

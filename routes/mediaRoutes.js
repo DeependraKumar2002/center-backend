@@ -3,25 +3,11 @@ import { uploadMedia } from "../controllers/mediaController.js";
 import multer from "multer";
 import { existsSync, mkdirSync } from 'fs';
 
-
 const router = express.Router();
 
 // Configure multer for file upload with increased limits for deployed environments
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        // In deployed environments, ensure uploads directory exists
-        const uploadDir = 'uploads/';
-
-        if (!existsSync(uploadDir)) {
-            mkdirSync(uploadDir, { recursive: true });
-        }
-
-        cb(null, uploadDir);
-    },
-    filename: function (req, file, cb) {
-        cb(null, Date.now() + "-" + file.originalname);
-    }
-});
+// Use memory storage for production to avoid file system issues on platforms like Render
+const storage = multer.memoryStorage(); // Changed from diskStorage to memoryStorage
 
 const upload = multer({
     storage: storage,

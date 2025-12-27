@@ -2,6 +2,7 @@ import cloudinary from "../config/cloudinary.js";
 import User from "../models/User.js";
 import Center from "../models/Center.js";
 import { existsSync, unlinkSync } from 'fs';
+import { Readable } from 'stream';
 
 // Upload media file
 export const uploadMedia = async (req, res) => {
@@ -13,31 +14,38 @@ export const uploadMedia = async (req, res) => {
             return res.status(400).json({ message: "No file uploaded" });
         }
 
-        console.log('File received for upload:', req.file.filename, 'Size:', req.file.size, 'Mime:', req.file.mimetype);
-
-        console.log('Attempting to upload file to Cloudinary:', req.file.path);
+        console.log('File received for upload:', req.file.originalname, 'Size:', req.file.size, 'Mime:', req.file.mimetype);
 
         // Extract centerCode from the request body if available
         const centerCode = req.body.centerCode || 'default';
 
-        // Upload file to Cloudinary
-        const result = await cloudinary.uploader.upload(req.file.path, {
-            folder: `center_management_app/${centerCode}`,
-            resource_type: req.file.mimetype?.startsWith("video/") ? "video" : "image",
-            timeout: 300000, // 5 minute timeout for upload
+        // For memory storage, we need to upload the buffer directly to Cloudinary
+        // Create a readable stream from the buffer
+        const fileStream = Readable.from(req.file.buffer);
+
+        // Upload file to Cloudinary directly from buffer
+        const result = await new Promise((resolve, reject) => {
+            const uploadStream = cloudinary.uploader.upload_stream(
+                {
+                    folder: `center_management_app/${centerCode}`,
+                    resource_type: req.file.mimetype?.startsWith("video/") ? "video" : "image",
+                    timeout: 300000, // 5 minute timeout for upload
+                },
+                (error, result) => {
+                    if (error) {
+                        console.error('Cloudinary upload error:', error);
+                        reject(error);
+                    } else {
+                        resolve(result);
+                    }
+                }
+            );
+
+            // Pipe the file stream to Cloudinary
+            fileStream.pipe(uploadStream);
         });
 
         console.log('Cloudinary upload successful:', result.secure_url);
-
-        // Delete the temporary file after successful upload
-        try {
-            if (req.file && req.file.path && existsSync(req.file.path)) {
-                unlinkSync(req.file.path);
-                console.log('Temporary file deleted:', req.file.path);
-            }
-        } catch (fsError) {
-            console.error('Error deleting temporary file after successful upload:', fsError.message);
-        }
 
         // Log the Cloudinary URL to terminal for debugging
         console.log('Uploaded media URL:', result.secure_url);
@@ -60,18 +68,6 @@ export const uploadMedia = async (req, res) => {
                 message: "Upload timeout - file too large or network issue",
                 error: error.message
             });
-        }
-
-        // Delete the temporary file if upload fails
-        if (req.file && req.file.path) {
-            try {
-                if (existsSync(req.file.path)) {
-                    unlinkSync(req.file.path);
-                    console.log('Temporary file deleted after error:', req.file.path);
-                }
-            } catch (fsError) {
-                console.error('Error deleting temporary file after error:', fsError.message);
-            }
         }
 
         res.status(500).json({

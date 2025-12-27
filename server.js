@@ -41,9 +41,18 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// Parse JSON body with increased limits for file uploads
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+// Apply body parsing middleware only to non-upload routes to avoid conflicts with multer
+app.use((req, res, next) => {
+  // Skip JSON and URL-encoded parsing for upload routes to avoid conflicts with multer
+  if (req.url.includes('/media/upload') || req.url.includes('/upload')) {
+    next();
+  } else {
+    express.json({ limit: '50mb' })(req, res, (err) => {
+      if (err) return next(err);
+      express.urlencoded({ extended: true, limit: '50mb' })(req, res, next);
+    });
+  }
+});
 
 /* =========================
    HEALTH CHECK - Defined before routes to ensure accessibility
@@ -82,6 +91,13 @@ app.post('/test-upload', (req, res) => {
 /* =========================
    ROUTES
 ========================= */
+// Increase timeout specifically for media upload routes to handle large files
+app.use('/api/media/upload', (req, res, next) => {
+  req.setTimeout(600000); // 10 minutes for upload
+  res.setTimeout(600000); // 10 minutes for upload response
+  next();
+});
+
 app.use("/upload", uploadRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/states", stateRoutes);

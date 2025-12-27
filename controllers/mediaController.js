@@ -1,6 +1,7 @@
 import cloudinary from "../config/cloudinary.js";
 import User from "../models/User.js";
 import Center from "../models/Center.js";
+import { existsSync, unlinkSync } from 'fs';
 
 // Upload media file
 export const uploadMedia = async (req, res) => {
@@ -30,9 +31,8 @@ export const uploadMedia = async (req, res) => {
 
         // Delete the temporary file after successful upload
         try {
-            const fs = await import('fs');
-            if (req.file && req.file.path && fs.existsSync(req.file.path)) {
-                fs.unlinkSync(req.file.path);
+            if (req.file && req.file.path && existsSync(req.file.path)) {
+                unlinkSync(req.file.path);
                 console.log('Temporary file deleted:', req.file.path);
             }
         } catch (fsError) {
@@ -65,9 +65,8 @@ export const uploadMedia = async (req, res) => {
         // Delete the temporary file if upload fails
         if (req.file && req.file.path) {
             try {
-                const fs = await import('fs');
-                if (fs.existsSync(req.file.path)) {
-                    fs.unlinkSync(req.file.path);
+                if (existsSync(req.file.path)) {
+                    unlinkSync(req.file.path);
                     console.log('Temporary file deleted after error:', req.file.path);
                 }
             } catch (fsError) {

@@ -1,6 +1,7 @@
 import express from "express";
 import { uploadMedia } from "../controllers/mediaController.js";
 import multer from "multer";
+import { existsSync, mkdirSync } from 'fs';
 
 
 const router = express.Router();
@@ -9,11 +10,10 @@ const router = express.Router();
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         // In deployed environments, ensure uploads directory exists
-        const fs = require('fs');
         const uploadDir = 'uploads/';
 
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
+        if (!existsSync(uploadDir)) {
+            mkdirSync(uploadDir, { recursive: true });
         }
 
         cb(null, uploadDir);

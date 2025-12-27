@@ -70,6 +70,15 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Test endpoint for media upload connectivity
+app.post('/test-upload', (req, res) => {
+  res.status(200).json({
+    status: 'upload endpoint accessible',
+    message: 'Upload endpoint is working properly',
+    timestamp: new Date().toISOString()
+  });
+});
+
 /* =========================
    ROUTES
 ========================= */

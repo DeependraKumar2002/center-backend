@@ -29,13 +29,12 @@ const app = express();
 /* =========================
    MIDDLEWARE
 ========================= */
-
 const corsOptions = {
-  origin: '*', // Allow all origins for public access
+  origin: process.env.CORS_ORIGIN || '*', // Allow specific origin in production if needed
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
   credentials: false, // Set to false when allowing all origins
   optionsSuccessStatus: 200,
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Content-Length", "X-Content-Type-Options"],
   exposedHeaders: ["Content-Range", "X-Content-Range"],
 };
 
@@ -62,12 +61,17 @@ app.get("/", (req, res) => {
   res.status(200).json({
     success: true,
     message: "Server is running",
+    timestamp: new Date().toISOString()
   });
 });
 
 // Keep server alive with ping endpoint
 app.get('/ping', (req, res) => {
-  res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+  res.status(200).json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
 });
 
 // Additional health check endpoints
@@ -75,7 +79,8 @@ app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
+    env: process.env.NODE_ENV || 'development'
   });
 });
 
@@ -117,25 +122,28 @@ const PORT = process.env.PORT || 5000;
 // Keep-alive mechanism for platforms like Render
 // Ping the server to keep it awake more frequently
 if (process.env.NODE_ENV === 'production') {
+  // Use the actual external URL for production environments
   setInterval(() => {
-    // Use the actual server URL for production environments
-    const serverUrl = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
-    fetch(`${serverUrl}/ping`)
-      .then(() => console.log('External ping successful - server kept alive'))
-      .catch(err => console.log('External ping failed:', err.message));
+    const serverUrl = process.env.RENDER_EXTERNAL_URL || `https://center-mgt-1.onrender.com`;
+    if (serverUrl) {
+      fetch(`${serverUrl}/ping`)
+        .then(() => console.log('External ping successful - server kept alive'))
+        .catch(err => console.log('External ping failed:', err.message));
+    }
   }, 5 * 60 * 1000); // Ping every 5 minutes (more aggressive)
 }
 
 // Increase timeout settings for long-running requests
 app.use((req, res, next) => {
   req.setTimeout(600000); // 10 minutes
-
   res.setTimeout(600000); // 10 minutes
   next();
 });
 
 const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔗 Server URL: http://localhost:${PORT}`);
 });
 
 // Set server timeout for idle connections

@@ -55,16 +55,28 @@ const fileFilter = (req, file, cb) => {
         'video/mpeg',
     ];
 
-    if (!allowedTypes.includes(file.mimetype)) {
-        console.log('File rejected:', file.originalname, 'Invalid type:', file.mimetype);
+    // Check if the MIME type is valid (primary check)
+    const isValidMimeType = allowedTypes.includes(file.mimetype);
+
+    // If MIME type is text/plain or not recognized, check the file extension
+    const originalName = file.originalname.toLowerCase();
+    const hasValidImageExtension = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.tiff', '.svg', '.ico', '.heic', '.heif'].some(ext => originalName.endsWith(ext));
+    const hasValidVideoExtension = ['.mp4', '.mov', '.avi', '.wmv', '.flv', '.webm', '.3gp', '.m4v', '.mkv', '.mpg', '.mpeg'].some(ext => originalName.endsWith(ext));
+
+    if (!isValidMimeType && file.mimetype === 'text/plain' && (hasValidImageExtension || hasValidVideoExtension)) {
+        // If MIME type is text/plain but has a valid image/video extension, allow it
+        console.log('File accepted based on extension:', file.originalname, 'Type:', file.mimetype, 'Extension:', originalName);
+        cb(null, true);
+    } else if (!isValidMimeType) {
+        console.log('File rejected:', file.originalname, 'Invalid type:', file.mimetype, 'Original name:', originalName);
         return cb(
             new Error(`Invalid file type: ${file.mimetype}`),
             false
         );
+    } else {
+        console.log('File accepted:', file.originalname, 'Type:', file.mimetype);
+        cb(null, true);
     }
-
-    console.log('File accepted:', file.originalname, 'Type:', file.mimetype);
-    cb(null, true);
 };
 
 /* ===========================
@@ -79,25 +91,43 @@ const upload = multer({
 });
 
 // POST /media/upload - Public route
-router.post("/upload", upload.single("file"), (req, res, next) => {
-    // Simple middleware to verify file exists and pass to controller
-    if (!req.file) {
-        console.log('No file received in request');
-        return res.status(400).json({
-            success: false,
-            error: 'No file received',
+router.post("/upload", (req, res, next) => {
+    upload.single("file")(req, res, (err) => {
+        if (err instanceof multer.MulterError) {
+            // A Multer error occurred when uploading
+            console.error('Multer error:', err);
+            return res.status(400).json({
+                success: false,
+                error: err.message || 'File upload error',
+            });
+        } else if (err) {
+            // An error occurred during file filtering
+            console.error('File filter error:', err);
+            return res.status(400).json({
+                success: false,
+                error: err.message || 'File type not allowed',
+            });
+        }
+
+        // If no error, continue with the next middleware
+        if (!req.file) {
+            console.log('No file received in request');
+            return res.status(400).json({
+                success: false,
+                error: 'No file received',
+            });
+        }
+
+        console.log('File received for processing:', {
+            filename: req.file.filename,
+            originalname: req.file.originalname,
+            mimetype: req.file.mimetype,
+            size: req.file.size,
         });
-    }
 
-    console.log('File received for processing:', {
-        filename: req.file.filename,
-        originalname: req.file.originalname,
-        mimetype: req.file.mimetype,
-        size: req.file.size,
+        // Pass control to the controller
+        next();
     });
-
-    // Pass control to the controller
-    next();
 }, uploadMedia);
 
 export default router;

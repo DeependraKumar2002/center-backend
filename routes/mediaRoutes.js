@@ -34,14 +34,27 @@ router.post("/upload", (req, res, next) => {
     console.log('Media upload route hit');
     console.log('Content-Type:', req.headers['content-type']);
     console.log('Content-Length:', req.headers['content-length']);
+    console.log('Raw body keys:', Object.keys(req.body || {}));
+    console.log('Raw files keys:', Object.keys(req.files || req.file || {}));
+    console.log('Expected field name: mediaFile');
+
     upload.single("mediaFile")(req, res, (err) => {
         if (err) {
             console.error('Multer error:', err.message);
+            console.error('Multer error details:', err);
             return res.status(400).json({
                 message: 'File upload error',
                 error: err.message
             });
         }
+
+        console.log('File processed by Multer:', !!req.file);
+        if (!req.file) {
+            console.log('File object missing after Multer processing');
+            console.log('All available request files:', Object.keys(req.files || {}));
+            console.log('All available request body:', req.body);
+        }
+
         next();
     });
 }, uploadMedia);

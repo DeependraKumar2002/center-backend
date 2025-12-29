@@ -97,7 +97,8 @@ app.post('/test-upload', (req, res) => {
    ROUTES
 ========================= */
 // Increase timeout specifically for media upload routes to handle large files
-app.use('/api/media/upload', (req, res, next) => {
+app.use('/api/media', (req, res, next) => {
+  // Increase timeout for any media-related routes
   req.setTimeout(1200000); // 20 minutes for upload
   res.setTimeout(1200000); // 20 minutes for upload response
   next();

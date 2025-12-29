@@ -162,4 +162,39 @@ router.post("/save-url", async (req, res) => {
     }
 });
 
+// GET /media/upload-signature - Generate unsigned upload signature for client-side uploads
+router.get('/upload-signature', async (req, res) => {
+    try {
+        // Import cloudinary here
+        const cloudinary = (await import('../config/cloudinary.js')).default;
+
+        // Generate a signature for unsigned uploads
+        // This allows the client to upload directly to Cloudinary securely
+        const timestamp = Date.now();
+
+        // For unsigned uploads, we create a signature that allows uploads to a specific folder
+        const params_to_sign = {
+            timestamp: timestamp,
+            folder: 'center_management_app',
+            upload_preset: 'center_management_app' // This must be created in Cloudinary dashboard
+        };
+
+        // Generate the signature using Cloudinary's API
+        const signature = cloudinary.utils.api_sign_request(params_to_sign, process.env.CLOUDINARY_API_SECRET);
+
+        res.json({
+            signature,
+            timestamp,
+            folder: 'center_management_app',
+            cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+            api_key: process.env.CLOUDINARY_API_KEY
+        });
+    } catch (error) {
+        console.error('Error generating upload signature:', error);
+        res.status(500).json({
+            error: 'Failed to generate upload signature'
+        });
+    }
+});
+
 export default router;

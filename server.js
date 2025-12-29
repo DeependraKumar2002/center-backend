@@ -46,9 +46,9 @@ app.use((req, res, next) => {
   if (req.url.includes('/media/upload') || req.url.includes('/upload')) {
     next();
   } else {
-    express.json({ limit: '50mb' })(req, res, (err) => {
+    express.json({ limit: '100mb' })(req, res, (err) => {
       if (err) return next(err);
-      express.urlencoded({ extended: true, limit: '50mb' })(req, res, next);
+      express.urlencoded({ extended: true, limit: '100mb' })(req, res, next);
     });
   }
 });
@@ -98,8 +98,8 @@ app.post('/test-upload', (req, res) => {
 ========================= */
 // Increase timeout specifically for media upload routes to handle large files
 app.use('/api/media/upload', (req, res, next) => {
-  req.setTimeout(600000); // 10 minutes for upload
-  res.setTimeout(600000); // 10 minutes for upload response
+  req.setTimeout(1200000); // 20 minutes for upload
+  res.setTimeout(1200000); // 20 minutes for upload response
   next();
 });
 
@@ -115,28 +115,22 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/admin-auth', adminAuthRoutes);
 
 /* =========================
-   SERVER
+   SERVER - Keep alive mechanism
 ========================= */
 const PORT = process.env.PORT || 5000;
 
-// Keep-alive mechanism for platforms like Render
-// Ping the server to keep it awake more frequently
-if (process.env.NODE_ENV === 'production') {
-  // Use the actual external URL for production environments
-  setInterval(() => {
-    const serverUrl = process.env.RENDER_EXTERNAL_URL || `https://center-mgt-1.onrender.com`;
-    if (serverUrl) {
-      fetch(`${serverUrl}/ping`)
-        .then(() => console.log('External ping successful - server kept alive'))
-        .catch(err => console.log('External ping failed:', err.message));
-    }
-  }, 5 * 60 * 1000); // Ping every 5 minutes (more aggressive)
-}
+// Remove the keep-alive mechanism that was causing issues
+// Instead, implement a simple HTTP keep-alive at the server level
+app.use((req, res, next) => {
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Keep-Alive', 'timeout=60, max=1000');
+  next();
+});
 
 // Increase timeout settings for long-running requests
 app.use((req, res, next) => {
-  req.setTimeout(600000); // 10 minutes
-  res.setTimeout(600000); // 10 minutes
+  req.setTimeout(1200000); // 20 minutes
+  res.setTimeout(1200000); // 20 minutes
   next();
 });
 
@@ -147,7 +141,7 @@ const server = app.listen(PORT, '0.0.0.0', () => {
 });
 
 // Set server timeout for idle connections
-server.timeout = 600000; // 10 minutes
+server.timeout = 1200000; // 20 minutes
 
 // Handle graceful shutdown
 process.on('SIGTERM', () => {
@@ -163,3 +157,18 @@ process.on('SIGINT', () => {
     console.log('Process terminated');
   });
 });
+
+// Keep the process alive by sending periodic HTTP requests to itself
+// This prevents Render from putting the server to sleep
+setInterval(async () => {
+  try {
+    const response = await fetch(`http://localhost:${PORT}/ping`);
+    const data = await response.json();
+    console.log('Self-ping successful:', data.status);
+  } catch (error) {
+    console.log('Self-ping failed:', error.message);
+  }
+}, 280000); // Every ~4.5 minutes (under the 5-minute timeout)
+
+// Keep the process alive even if no connections
+process.stdin.resume();

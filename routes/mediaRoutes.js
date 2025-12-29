@@ -1,85 +1,111 @@
 import express from "express";
 import { uploadMedia } from "../controllers/mediaController.js";
 import multer from "multer";
+import path from 'path';
+import fs from 'fs';
 
 const router = express.Router();
 
-// Configure multer for file upload with memory storage for production environments
-const storage = multer.memoryStorage();
+/* ===========================
+   STORAGE CONFIG
+=========================== */
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        const uploadDir = 'uploads';
 
-const upload = multer({
-    storage: storage,
-    limits: {
-        fileSize: 200 * 1024 * 1024, // 200MB limit (increased from 100MB)
-        fieldSize: 200 * 1024 * 1024, // 200MB field size limit
-        fields: 50, // Max number of non-file fields
-        parts: 500, // Max number of parts (files + fields)
-    },
-    // Add file filter to ensure only valid files are accepted
-    fileFilter: (req, file, cb) => {
-        console.log('File filter called for:', file.originalname, 'Mimetype:', file.mimetype);
-        // Accept images and videos
-        if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
-            console.log('File accepted:', file.originalname);
-            cb(null, true);
-        } else {
-            console.log('File rejected:', file.originalname, 'Invalid type:', file.mimetype);
-            cb(new Error('Invalid file type. Only images and videos are allowed.'), false);
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
         }
+
+        cb(null, uploadDir);
+    },
+
+    filename: function (req, file, cb) {
+        const uniqueName =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+        cb(null, uniqueName + path.extname(file.originalname));
+    },
+});
+
+/* ===========================
+   FILE FILTER
+=========================== */
+const fileFilter = (req, file, cb) => {
+    const allowedTypes = [
+        'image/jpeg',
+        'image/png',
+        'image/jpg',
+        'image/webp',
+        'image/gif',
+        'image/bmp',
+        'image/tiff',
+        'image/svg+xml',
+        'image/x-icon',
+        'image/heic',
+        'image/heif',
+        'video/mp4',
+        'video/quicktime',
+        'video/x-msvideo',
+        'video/x-ms-wmv',
+        'video/x-flv',
+        'video/webm',
+        'video/3gpp',
+        'video/x-m4v',
+        'video/x-matroska',
+        'video/mpeg',
+    ];
+
+    if (!allowedTypes.includes(file.mimetype)) {
+        console.log('File rejected:', file.originalname, 'Invalid type:', file.mimetype);
+        return cb(
+            new Error(`Invalid file type: ${file.mimetype}`),
+            false
+        );
     }
+
+    console.log('File accepted:', file.originalname, 'Type:', file.mimetype);
+    cb(null, true);
+};
+
+/* ===========================
+   MULTER INSTANCE
+=========================== */
+const upload = multer({
+    storage,
+    fileFilter,
+    limits: {
+        fileSize: 50 * 1024 * 1024, // 50MB
+    },
 });
 
 // POST /media/upload - Public route
-router.post("/upload", (req, res, next) => {
-    console.log('Media upload route hit');
-    console.log('Content-Type:', req.headers['content-type']);
-    console.log('Content-Length:', req.headers['content-length']);
-    console.log('Raw body keys:', Object.keys(req.body || {}));
-    console.log('Raw files keys:', Object.keys(req.files || req.file || {}));
-    console.log('Expected field name: mediaFile');
-    console.log('Full headers:', req.headers);
-    console.log('Query params:', req.query);
-
-    upload.single("mediaFile")(req, res, (err) => {
-        if (err) {
-            console.error('Multer error:', err.message);
-            console.error('Multer error details:', err);
-            console.error('Multer error code:', err.code);
+router.post("/upload", upload.single("file"), (req, res, next) => {
+    try {
+        if (!req.file) {
+            console.log('No file received in request');
             return res.status(400).json({
-                message: 'File upload error',
-                error: err.message,
-                code: err.code
+                success: false,
+                error: 'No file received',
             });
         }
 
-        console.log('File processed by Multer:', !!req.file);
-        if (req.file) {
-            console.log('File details:', {
-                originalname: req.file.originalname,
-                mimetype: req.file.mimetype,
-                size: req.file.size,
-                fieldname: req.file.fieldname,
-                encoding: req.file.encoding
-            });
+        console.log('File uploaded successfully:', {
+            filename: req.file.filename,
+            originalname: req.file.originalname,
+            mimetype: req.file.mimetype,
+            size: req.file.size,
+        });
 
-            // Check if the file type is valid
-            const isValidType = req.file.mimetype &&
-                (req.file.mimetype.startsWith('image/') || req.file.mimetype.startsWith('video/'));
-            console.log('Is valid file type?', isValidType);
-            console.log('Mimetype check:', {
-                startsWithImage: req.file.mimetype?.startsWith('image/'),
-                startsWithVideo: req.file.mimetype?.startsWith('video/'),
-                actualMimetype: req.file.mimetype
-            });
-        } else {
-            console.log('File object missing after Multer processing');
-            console.log('All available request files:', Object.keys(req.files || {}));
-            console.log('All available request body:', req.body);
-            console.log('Request object keys:', Object.keys(req));
-        }
-
+        // Pass control to the controller
+        req.processedFile = req.file;
         next();
-    });
+    } catch (error) {
+        console.error('UPLOAD ERROR:', error);
+        return res.status(500).json({
+            success: false,
+            error: 'Server error during upload',
+        });
+    }
 }, uploadMedia);
 
 export default router;

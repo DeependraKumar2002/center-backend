@@ -104,6 +104,9 @@ app.use('/api/media', (req, res, next) => {
   next();
 });
 
+// Serve static files from uploads directory
+app.use('/uploads', express.static('uploads'));
+
 app.use("/upload", uploadRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/states", stateRoutes);

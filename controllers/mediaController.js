@@ -1,7 +1,7 @@
 import cloudinary from "../config/cloudinary.js";
 import User from "../models/User.js";
 import Center from "../models/Center.js";
-import { Readable } from 'stream';
+import fs from 'fs';
 
 // Upload media file
 export const uploadMedia = async (req, res) => {
@@ -10,10 +10,11 @@ export const uploadMedia = async (req, res) => {
         req.setTimeout(1800000); // 30 minutes for large file uploads
 
         console.log('Media upload request received');
-        console.log('Request files:', Object.keys(req.files || req.file || {}).join(', '));
-        console.log('Request body:', req.body);
 
-        if (!req.file) {
+        // Use the processed file from the route middleware
+        const file = req.processedFile || req.file;
+
+        if (!file) {
             console.log('No file received in request');
             return res.status(400).json({
                 message: "No file uploaded",
@@ -22,39 +23,44 @@ export const uploadMedia = async (req, res) => {
         }
 
         console.log('File received for upload:', {
-            originalname: req.file.originalname,
-            size: req.file.size,
-            mimetype: req.file.mimetype,
-            fieldname: req.file.fieldname,
-            bufferLength: req.file.buffer ? req.file.buffer.length : 0
+            originalname: file.originalname,
+            size: file.size,
+            mimetype: file.mimetype,
+            fieldname: file.fieldname,
+            encoding: file.encoding,
+            path: file.path
         });
 
         // Validate file type
-        if (!req.file.mimetype.startsWith('image/') && !req.file.mimetype.startsWith('video/')) {
-            console.log('Invalid file type received:', req.file.mimetype);
+        if (!file.mimetype || (!file.mimetype.startsWith('image/') && !file.mimetype.startsWith('video/'))) {
+            console.log('Invalid or missing file type received:', file.mimetype);
+            console.log('Available file properties:', Object.keys(file || {}));
             return res.status(400).json({
                 message: "Invalid file type",
-                error: "Only image and video files are allowed"
+                error: "Only image and video files are allowed",
+                receivedType: file.mimetype
             });
         }
 
         // Check file size (convert to MB)
-        const fileSizeInMB = req.file.size / (1024 * 1024);
+        const fileSizeInMB = file.size / (1024 * 1024);
         console.log(`File size: ${fileSizeInMB.toFixed(2)} MB`);
 
         // Extract centerCode from the request body if available
         const centerCode = req.body.centerCode || 'default';
         console.log('Uploading to center:', centerCode);
 
-        // For memory storage, upload the buffer directly to Cloudinary
-        // Using data URL method for direct upload from buffer
+        // Read the file from disk and upload to Cloudinary
         console.log('Preparing to upload to Cloudinary...');
 
-        const fileDataUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+        // Read file as buffer
+        const fileBuffer = fs.readFileSync(file.path);
+
+        const fileDataUrl = `data:${file.mimetype};base64,${fileBuffer.toString('base64')}`;
 
         const result = await cloudinary.uploader.upload(fileDataUrl, {
             folder: `center_management_app/${centerCode}`,
-            resource_type: req.file.mimetype?.startsWith("video/") ? "video" : "image",
+            resource_type: file.mimetype?.startsWith("video/") ? "video" : "image",
             timeout: 1200000, // 20 minute timeout for upload (increased)
             chunk_size: 10000000, // 10MB chunks for large files
             // Additional options for better handling of large files
@@ -69,14 +75,22 @@ export const uploadMedia = async (req, res) => {
         console.log('Uploaded media URL:', result.secure_url);
         console.log('Public ID:', result.public_id);
 
+        // Remove the temporary file from disk
+        try {
+            fs.unlinkSync(file.path);
+            console.log('Temporary file removed:', file.path);
+        } catch (unlinkError) {
+            console.error('Error removing temporary file:', unlinkError);
+        }
+
         // Return the Cloudinary URL and public_id
         res.status(200).json({
             message: "File uploaded successfully",
             fileUrl: result.secure_url,
             public_id: result.public_id,
-            fileType: req.file.mimetype?.startsWith("video/") ? "video" : "image",
-            originalName: req.file.originalname,
-            size: req.file.size
+            fileType: file.mimetype?.startsWith("video/") ? "video" : "image",
+            originalName: file.originalname,
+            size: file.size
         });
 
     } catch (error) {

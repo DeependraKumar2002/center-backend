@@ -30,7 +30,7 @@ const app = express();
    MIDDLEWARE
 ========================= */
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN || '*', // Allow specific origin in production if needed
+  origin: process.env.CORS_ORIGIN || 'http://localhost:8081', // Allow React Native Web dev server
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
   credentials: false, // Set to false when allowing all origins
   optionsSuccessStatus: 200,
@@ -39,6 +39,21 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+
+// Additional middleware to ensure CORS headers are present even in error scenarios
+app.use((req, res, next) => {
+  // Set CORS headers for all requests
+  res.header('Access-Control-Allow-Origin', process.env.CORS_ORIGIN || 'http://localhost:8081');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Content-Length, X-Content-Type-Options');
+
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+});
 
 // Apply body parsing middleware only to non-upload routes to avoid conflicts with multer
 app.use((req, res, next) => {
@@ -121,6 +136,11 @@ app.use('/api/admin-auth', adminAuthRoutes);
 // Global error handling middleware - must be defined after routes
 app.use((err, req, res, next) => {
   console.error('Global error handler:', err);
+
+  // Ensure CORS headers are set for error responses
+  res.header('Access-Control-Allow-Origin', process.env.CORS_ORIGIN || 'http://localhost:8081');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Content-Length, X-Content-Type-Options');
 
   // Prevent HTML error pages from being returned
   if (req.url.includes('/api/')) {

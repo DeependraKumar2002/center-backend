@@ -38,14 +38,17 @@ router.post("/upload", (req, res, next) => {
     console.log('Raw files keys:', Object.keys(req.files || req.file || {}));
     console.log('Expected field name: mediaFile');
     console.log('Full headers:', req.headers);
+    console.log('Query params:', req.query);
 
     upload.single("mediaFile")(req, res, (err) => {
         if (err) {
             console.error('Multer error:', err.message);
             console.error('Multer error details:', err);
+            console.error('Multer error code:', err.code);
             return res.status(400).json({
                 message: 'File upload error',
-                error: err.message
+                error: err.message,
+                code: err.code
             });
         }
 
@@ -72,6 +75,7 @@ router.post("/upload", (req, res, next) => {
             console.log('File object missing after Multer processing');
             console.log('All available request files:', Object.keys(req.files || {}));
             console.log('All available request body:', req.body);
+            console.log('Request object keys:', Object.keys(req));
         }
 
         next();

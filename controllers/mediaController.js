@@ -64,41 +64,102 @@ export const uploadMedia = async (req, res) => {
             });
         }
 
-        // Upload file directly using its path
-        const result = await cloudinary.uploader.upload(file.path, {
-            folder: `center_management_app/${centerCode}`,
-            resource_type: file.mimetype?.startsWith("video/") ? "video" : "image",
-            timeout: 1200000, // 20 minute timeout for upload (increased)
-            chunk_size: 10000000, // 10MB chunks for large files
-            // Additional options for better handling of large files
-            eager_async: true,
-            use_filename: true,
-            unique_filename: true
+        // Validate file path exists before attempting upload
+        console.log('Attempting to upload file to Cloudinary:', file.path);
+
+        // Verify the Cloudinary configuration is loaded
+        console.log('Cloudinary config:', {
+            cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+            api_key: process.env.CLOUDINARY_API_KEY ? '***HIDDEN***' : 'NOT SET',
+            has_secret: !!process.env.CLOUDINARY_API_SECRET
         });
 
-        console.log('Cloudinary upload successful:', result.secure_url);
-
-        // Log the Cloudinary URL to terminal for debugging
-        console.log('Uploaded media URL:', result.secure_url);
-        console.log('Public ID:', result.public_id);
-
-        // Remove the temporary file from disk
-        try {
-            fs.unlinkSync(file.path);
-            console.log('Temporary file removed:', file.path);
-        } catch (unlinkError) {
-            console.error('Error removing temporary file:', unlinkError);
+        // Check if file path exists and is accessible
+        if (!file.path || !fs.existsSync(file.path)) {
+            console.log('File path does not exist:', file.path);
+            return res.status(500).json({
+                message: "Server error during media upload",
+                error: "File not found on server",
+                path: file.path
+            });
         }
 
-        // Return the Cloudinary URL and public_id
-        res.status(200).json({
-            message: "File uploaded successfully",
-            fileUrl: result.secure_url,
-            public_id: result.public_id,
-            fileType: file.mimetype?.startsWith("video/") ? "video" : "image",
-            originalName: file.originalname,
-            size: file.size
-        });
+        try {
+            const result = await cloudinary.uploader.upload(file.path, {
+                folder: `center_management_app/${centerCode}`,
+                resource_type: file.mimetype?.startsWith("video/") ? "video" : "image",
+                timeout: 1200000, // 20 minute timeout for upload (increased)
+                chunk_size: 10000000, // 10MB chunks for large files
+                // Additional options for better handling of large files
+                eager_async: true,
+                use_filename: true,
+                unique_filename: true
+            });
+
+            console.log('Cloudinary upload completed successfully');
+        } catch (cloudinaryError) {
+            console.error('Cloudinary upload failed:', cloudinaryError);
+
+            // Remove the temporary file from disk if Cloudinary upload failed
+            try {
+                if (file && file.path && fs.existsSync(file.path)) {
+                    fs.unlinkSync(file.path);
+                    console.log('Cleaned up temporary file after Cloudinary error:', file.path);
+                }
+            } catch (unlinkError) {
+                console.error('Error during Cloudinary error cleanup:', unlinkError);
+            }
+
+            return res.status(500).json({
+                message: "Server error during media upload",
+                error: "Cloudinary upload failed",
+                details: cloudinaryError.message
+            });
+        }
+
+        if (result) {
+            console.log('Cloudinary upload successful:', result.secure_url);
+
+            // Log the Cloudinary URL to terminal for debugging
+            console.log('Uploaded media URL:', result.secure_url);
+            console.log('Public ID:', result.public_id);
+
+            // Remove the temporary file from disk
+            try {
+                fs.unlinkSync(file.path);
+                console.log('Temporary file removed:', file.path);
+            } catch (unlinkError) {
+                console.error('Error removing temporary file:', unlinkError);
+            }
+
+            // Return the Cloudinary URL and public_id
+            res.status(200).json({
+                message: "File uploaded successfully",
+                fileUrl: result.secure_url,
+                public_id: result.public_id,
+                fileType: file.mimetype?.startsWith("video/") ? "video" : "image",
+                originalName: file.originalname,
+                size: file.size
+            });
+        } else {
+            // This shouldn't happen if the try-catch works properly, but as a safeguard
+            console.error('Unexpected: result is undefined after Cloudinary upload');
+
+            // Remove the temporary file from disk
+            try {
+                if (file && file.path && fs.existsSync(file.path)) {
+                    fs.unlinkSync(file.path);
+                    console.log('Cleaned up temporary file after unexpected error:', file.path);
+                }
+            } catch (unlinkError) {
+                console.error('Error during unexpected error cleanup:', unlinkError);
+            }
+
+            return res.status(500).json({
+                message: "Server error during media upload",
+                error: "Unexpected error: upload result is undefined"
+            });
+        }
 
     } catch (error) {
         console.error('Media upload error details:', {

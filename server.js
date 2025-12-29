@@ -118,6 +118,27 @@ app.use('/api/user-submissions', userSubmissionRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/admin-auth', adminAuthRoutes);
 
+// Global error handling middleware - must be defined after routes
+app.use((err, req, res, next) => {
+  console.error('Global error handler:', err);
+
+  // Prevent HTML error pages from being returned
+  if (req.url.includes('/api/')) {
+    res.status(err.status || 500).json({
+      success: false,
+      message: err.message || 'Internal server error',
+      ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+    });
+  } else {
+    // For non-API routes, you might want to return HTML
+    res.status(err.status || 500).json({
+      success: false,
+      message: err.message || 'Internal server error',
+      error: 'API Error'
+    });
+  }
+});
+
 /* =========================
    SERVER - Keep alive mechanism
 ========================= */

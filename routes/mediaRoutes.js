@@ -37,6 +37,7 @@ router.post("/upload", (req, res, next) => {
     console.log('Raw body keys:', Object.keys(req.body || {}));
     console.log('Raw files keys:', Object.keys(req.files || req.file || {}));
     console.log('Expected field name: mediaFile');
+    console.log('Full headers:', req.headers);
 
     upload.single("mediaFile")(req, res, (err) => {
         if (err) {
@@ -49,7 +50,25 @@ router.post("/upload", (req, res, next) => {
         }
 
         console.log('File processed by Multer:', !!req.file);
-        if (!req.file) {
+        if (req.file) {
+            console.log('File details:', {
+                originalname: req.file.originalname,
+                mimetype: req.file.mimetype,
+                size: req.file.size,
+                fieldname: req.file.fieldname,
+                encoding: req.file.encoding
+            });
+
+            // Check if the file type is valid
+            const isValidType = req.file.mimetype &&
+                (req.file.mimetype.startsWith('image/') || req.file.mimetype.startsWith('video/'));
+            console.log('Is valid file type?', isValidType);
+            console.log('Mimetype check:', {
+                startsWithImage: req.file.mimetype?.startsWith('image/'),
+                startsWithVideo: req.file.mimetype?.startsWith('video/'),
+                actualMimetype: req.file.mimetype
+            });
+        } else {
             console.log('File object missing after Multer processing');
             console.log('All available request files:', Object.keys(req.files || {}));
             console.log('All available request body:', req.body);

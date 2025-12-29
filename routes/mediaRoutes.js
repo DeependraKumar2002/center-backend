@@ -90,7 +90,7 @@ const upload = multer({
     },
 });
 
-// POST /media/upload - Public route
+// POST /media/upload - Public route (for direct file uploads)
 router.post("/upload", (req, res, next) => {
     upload.single("file")(req, res, (err) => {
         if (err instanceof multer.MulterError) {
@@ -129,5 +129,37 @@ router.post("/upload", (req, res, next) => {
         next();
     });
 }, uploadMedia);
+
+// POST /media/save-url - Public route (for Cloudinary URLs)
+router.post("/save-url", async (req, res) => {
+    try {
+        const { url, public_id, type, centerCode } = req.body;
+        
+        console.log('Received media URL for storage:', { url, public_id, type, centerCode });
+        
+        if (!url) {
+            return res.status(400).json({
+                success: false,
+                error: 'URL is required',
+            });
+        }
+        
+        // Return success with the URL information
+        res.status(200).json({
+            success: true,
+            message: "Media URL saved successfully",
+            fileUrl: url,
+            public_id: public_id,
+            fileType: type
+        });
+        
+    } catch (error) {
+        console.error('Error saving media URL:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Server error during media URL save',
+        });
+    }
+});
 
 export default router;

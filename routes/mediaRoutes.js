@@ -80,32 +80,24 @@ const upload = multer({
 
 // POST /media/upload - Public route
 router.post("/upload", upload.single("file"), (req, res, next) => {
-    try {
-        if (!req.file) {
-            console.log('No file received in request');
-            return res.status(400).json({
-                success: false,
-                error: 'No file received',
-            });
-        }
-
-        console.log('File uploaded successfully:', {
-            filename: req.file.filename,
-            originalname: req.file.originalname,
-            mimetype: req.file.mimetype,
-            size: req.file.size,
-        });
-
-        // Pass control to the controller
-        req.processedFile = req.file;
-        next();
-    } catch (error) {
-        console.error('UPLOAD ERROR:', error);
-        return res.status(500).json({
+    // Simple middleware to verify file exists and pass to controller
+    if (!req.file) {
+        console.log('No file received in request');
+        return res.status(400).json({
             success: false,
-            error: 'Server error during upload',
+            error: 'No file received',
         });
     }
+
+    console.log('File received for processing:', {
+        filename: req.file.filename,
+        originalname: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+    });
+
+    // Pass control to the controller
+    next();
 }, uploadMedia);
 
 export default router;

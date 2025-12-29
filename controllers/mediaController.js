@@ -11,8 +11,8 @@ export const uploadMedia = async (req, res) => {
 
         console.log('Media upload request received');
 
-        // Use the processed file from the route middleware
-        const file = req.processedFile || req.file;
+        // Use the file from multer
+        const file = req.file;
 
         if (!file) {
             console.log('No file received in request');
@@ -47,18 +47,25 @@ export const uploadMedia = async (req, res) => {
         console.log(`File size: ${fileSizeInMB.toFixed(2)} MB`);
 
         // Extract centerCode from the request body if available
+        console.log('Request body:', req.body);
         const centerCode = req.body.centerCode || 'default';
         console.log('Uploading to center:', centerCode);
 
         // Read the file from disk and upload to Cloudinary
         console.log('Preparing to upload to Cloudinary...');
+        console.log('File path:', file.path);
 
-        // Read file as buffer
-        const fileBuffer = fs.readFileSync(file.path);
+        // Check if file exists before attempting to read
+        if (!fs.existsSync(file.path)) {
+            console.log('File does not exist at path:', file.path);
+            return res.status(500).json({
+                message: "Server error during media upload",
+                error: "File not found on server"
+            });
+        }
 
-        const fileDataUrl = `data:${file.mimetype};base64,${fileBuffer.toString('base64')}`;
-
-        const result = await cloudinary.uploader.upload(fileDataUrl, {
+        // Upload file directly using its path
+        const result = await cloudinary.uploader.upload(file.path, {
             folder: `center_management_app/${centerCode}`,
             resource_type: file.mimetype?.startsWith("video/") ? "video" : "image",
             timeout: 1200000, // 20 minute timeout for upload (increased)
@@ -99,7 +106,9 @@ export const uploadMedia = async (req, res) => {
             stack: error.stack,
             code: error.error?.code,
             http_code: error.error?.http_code,
-            name: error.name
+            name: error.name,
+            file_path: file?.path,
+            file_exists: file?.path ? fs.existsSync(file.path) : undefined
         });
 
         // Check if the error is related to timeout or network
@@ -116,6 +125,16 @@ export const uploadMedia = async (req, res) => {
                 message: "Upload failed",
                 error: error.error.message || error.message
             });
+        }
+
+        // Remove the temporary file from disk if it exists
+        try {
+            if (file && file.path && fs.existsSync(file.path)) {
+                fs.unlinkSync(file.path);
+                console.log('Cleaned up temporary file after error:', file.path);
+            }
+        } catch (unlinkError) {
+            console.error('Error during error cleanup:', unlinkError);
         }
 
         res.status(500).json({

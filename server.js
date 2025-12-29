@@ -30,7 +30,7 @@ const app = express();
    MIDDLEWARE
 ========================= */
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN || 'http://localhost:8081', // Allow React Native Web dev server
+  origin: process.env.CORS_ORIGIN || ['http://localhost:8081', 'https://center-backend-production.up.railway.app'], // Allow React Native Web dev server and Railway
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
   credentials: false, // Set to false when allowing all origins
   optionsSuccessStatus: 200,
@@ -43,7 +43,8 @@ app.use(cors(corsOptions));
 // Additional middleware to ensure CORS headers are present even in error scenarios
 app.use((req, res, next) => {
   // Set CORS headers for all requests
-  res.header('Access-Control-Allow-Origin', process.env.CORS_ORIGIN || 'http://localhost:8081');
+  const origin = process.env.CORS_ORIGIN || 'https://center-backend-production.up.railway.app';
+  res.header('Access-Control-Allow-Origin', origin);
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Content-Length, X-Content-Type-Options');
 
@@ -138,7 +139,8 @@ app.use((err, req, res, next) => {
   console.error('Global error handler:', err);
 
   // Ensure CORS headers are set for error responses
-  res.header('Access-Control-Allow-Origin', process.env.CORS_ORIGIN || 'http://localhost:8081');
+  const origin = process.env.CORS_ORIGIN || 'https://center-backend-production.up.railway.app';
+  res.header('Access-Control-Allow-Origin', origin);
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Content-Length, X-Content-Type-Options');
 

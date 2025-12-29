@@ -28,19 +28,87 @@ export const uploadMedia = async (req, res) => {
             mimetype: file.mimetype,
             fieldname: file.fieldname,
             encoding: file.encoding,
-            path: file.path
+            path: file.path,
+            destination: file.destination,
+            filename: file.filename
         });
 
-        // Validate file type
-        if (!file.mimetype || (!file.mimetype.startsWith('image/') && !file.mimetype.startsWith('video/'))) {
-            console.log('Invalid or missing file type received:', file.mimetype);
+        // Debug: Check if the file extension matches what we expect
+        const originalName = file.originalname.toLowerCase();
+        console.log('File original name and extension check:', {
+            originalName: file.originalname,
+            lowerCaseName: originalName,
+            hasValidExtension: ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.tiff', '.svg', '.ico', '.heic', '.heif', '.mp4', '.mov', '.avi', '.wmv', '.flv', '.webm', '.3gp', '.m4v', '.mkv', '.mpg', '.mpeg'].some(ext => originalName.endsWith(ext))
+        });
+
+        // Validate file type - check if it's already an image/video MIME type
+        let validatedMimeType = file.mimetype;
+
+        console.log('Initial MIME type check:', {
+            originalMimetype: file.mimetype,
+            isTextPlain: file.mimetype === 'text/plain',
+            isMissing: !file.mimetype
+        });
+
+        // If the MIME type is text/plain, try to determine the actual type from the file extension
+        if (file.mimetype === 'text/plain' || !file.mimetype) {
+            const originalName = file.originalname.toLowerCase();
+            console.log('Attempting to detect MIME type from extension:', originalName);
+
+            // Map file extensions to proper MIME types
+            const extensionMap = {
+                '.jpg': 'image/jpeg',
+                '.jpeg': 'image/jpeg',
+                '.png': 'image/png',
+                '.gif': 'image/gif',
+                '.bmp': 'image/bmp',
+                '.webp': 'image/webp',
+                '.tiff': 'image/tiff',
+                '.svg': 'image/svg+xml',
+                '.ico': 'image/x-icon',
+                '.heic': 'image/heic',
+                '.heif': 'image/heif',
+                '.mp4': 'video/mp4',
+                '.mov': 'video/quicktime',
+                '.avi': 'video/x-msvideo',
+                '.wmv': 'video/x-ms-wmv',
+                '.flv': 'video/x-flv',
+                '.webm': 'video/webm',
+                '.3gp': 'video/3gpp',
+                '.m4v': 'video/x-m4v',
+                '.mkv': 'video/x-matroska',
+                '.mpg': 'video/mpeg',
+                '.mpeg': 'video/mpeg',
+            };
+
+            for (const [ext, mimeType] of Object.entries(extensionMap)) {
+                if (originalName.endsWith(ext)) {
+                    validatedMimeType = mimeType;
+                    console.log('Detected MIME type from extension:', ext, '->', mimeType);
+                    break;
+                }
+            }
+
+            if (validatedMimeType === file.mimetype) {
+                console.log('No extension match found, MIME type unchanged');
+            }
+        } else {
+            console.log('MIME type is not text/plain, using original MIME type');
+        }
+
+        // Now validate the corrected MIME type
+        if (!validatedMimeType || (!validatedMimeType.startsWith('image/') && !validatedMimeType.startsWith('video/'))) {
+            console.log('Invalid or missing file type received:', validatedMimeType || file.mimetype);
             console.log('Available file properties:', Object.keys(file || {}));
             return res.status(400).json({
                 message: "Invalid file type",
                 error: "Only image and video files are allowed",
-                receivedType: file.mimetype
+                receivedType: validatedMimeType || file.mimetype
             });
         }
+
+        // Update the file object with the validated MIME type
+        file.mimetype = validatedMimeType;
 
         // Check file size (convert to MB)
         const fileSizeInMB = file.size / (1024 * 1024);

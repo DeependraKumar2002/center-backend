@@ -46,9 +46,9 @@ app.use((req, res, next) => {
   if (req.url.includes('/media/upload') || req.url.includes('/upload')) {
     next();
   } else {
-    express.json({ limit: '100mb' })(req, res, (err) => {
+    express.json({ limit: '200mb' })(req, res, (err) => {
       if (err) return next(err);
-      express.urlencoded({ extended: true, limit: '100mb' })(req, res, next);
+      express.urlencoded({ extended: true, limit: '200mb' })(req, res, next);
     });
   }
 });
@@ -99,8 +99,8 @@ app.post('/test-upload', (req, res) => {
 // Increase timeout specifically for media upload routes to handle large files
 app.use('/api/media', (req, res, next) => {
   // Increase timeout for any media-related routes
-  req.setTimeout(1200000); // 20 minutes for upload
-  res.setTimeout(1200000); // 20 minutes for upload response
+  req.setTimeout(1800000); // 30 minutes for upload
+  res.setTimeout(1800000); // 30 minutes for upload response
   next();
 });
 
@@ -130,8 +130,8 @@ app.use((req, res, next) => {
 
 // Increase timeout settings for long-running requests
 app.use((req, res, next) => {
-  req.setTimeout(1200000); // 20 minutes
-  res.setTimeout(1200000); // 20 minutes
+  req.setTimeout(1800000); // 30 minutes
+  res.setTimeout(1800000); // 30 minutes
   next();
 });
 
@@ -142,7 +142,7 @@ const server = app.listen(PORT, '0.0.0.0', () => {
 });
 
 // Set server timeout for idle connections
-server.timeout = 1200000; // 20 minutes
+server.timeout = 1800000; // 30 minutes
 
 // Handle graceful shutdown
 process.on('SIGTERM', () => {

@@ -10,10 +10,10 @@ const storage = multer.memoryStorage();
 const upload = multer({
     storage: storage,
     limits: {
-        fileSize: 100 * 1024 * 1024, // 100MB limit (increased from 50MB)
-        fieldSize: 100 * 1024 * 1024, // 100MB field size limit
-        fields: 20, // Max number of non-file fields
-        parts: 200, // Max number of parts (files + fields)
+        fileSize: 200 * 1024 * 1024, // 200MB limit (increased from 100MB)
+        fieldSize: 200 * 1024 * 1024, // 200MB field size limit
+        fields: 50, // Max number of non-file fields
+        parts: 500, // Max number of parts (files + fields)
     },
     // Add file filter to ensure only valid files are accepted
     fileFilter: (req, file, cb) => {

@@ -7,7 +7,7 @@ import { Readable } from 'stream';
 export const uploadMedia = async (req, res) => {
     try {
         // Increase response timeout for this specific route
-        req.setTimeout(1200000); // 20 minutes for large file uploads
+        req.setTimeout(1800000); // 30 minutes for large file uploads
 
         console.log('Media upload request received');
         console.log('Request files:', Object.keys(req.files || req.file || {}).join(', '));
@@ -55,8 +55,8 @@ export const uploadMedia = async (req, res) => {
         const result = await cloudinary.uploader.upload(fileDataUrl, {
             folder: `center_management_app/${centerCode}`,
             resource_type: req.file.mimetype?.startsWith("video/") ? "video" : "image",
-            timeout: 600000, // 10 minute timeout for upload (increased)
-            chunk_size: 6000000, // 6MB chunks for large files
+            timeout: 1200000, // 20 minute timeout for upload (increased)
+            chunk_size: 10000000, // 10MB chunks for large files
             // Additional options for better handling of large files
             eager_async: true,
             use_filename: true,

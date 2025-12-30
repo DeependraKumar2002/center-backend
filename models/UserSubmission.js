@@ -45,6 +45,7 @@ const userSubmissionSchema = new mongoose.Schema({
         state: String,
         city: String,
         location: locationSchema,
+        remark: String,
         biometricDeskCount: String,
         media: mediaCategorySchema
     },

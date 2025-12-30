@@ -64,7 +64,7 @@ export const getCentersByName = async (req, res) => {
 // Create a new center
 export const createCenter = async (req, res) => {
     try {
-        const { centerCode, centerName, state, city, latitude, longitude, address, media, biometricDeskCount } = req.body;
+        const { centerCode, centerName, state, city, latitude, longitude, address, media, biometricDeskCount, remark } = req.body;
         console.log('Received data:', { centerCode, centerName, state, city, latitude, longitude, address, biometricDeskCount });
 
         // Get user email from token
@@ -113,6 +113,11 @@ export const createCenter = async (req, res) => {
             centerData.biometricDeskCount = biometricDeskCount;
         }
 
+        // Add remark if provided
+        if (remark) {
+            centerData.remark = remark;
+        }
+
         // Add media data organized by category if provided
         if (media) {
             const processedMedia = {};
@@ -143,7 +148,7 @@ export const createCenter = async (req, res) => {
         }
 
         // Create a user submission record (this will be the primary storage)
-        console.log('Location data from request:', { latitude, longitude, address });
+        console.log('Location data from request:', { latitude, longitude, address, remark });
 
         // Extract location from media if main location is missing
         let finalLatitude = latitude;
@@ -190,6 +195,7 @@ export const createCenter = async (req, res) => {
                     }
                 }),
                 biometricDeskCount,
+                remark,
                 media
             }
         };

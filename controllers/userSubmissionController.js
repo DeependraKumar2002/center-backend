@@ -145,21 +145,25 @@ export const updateSubmission = async (req, res) => {
         // Create updated center data starting with the new data
         const updatedCenterData = { ...centerData };
 
-        // Handle media preservation: if media is provided in the update, merge it properly
+        // Handle media preservation: if media is provided in the update, handle it properly
         if (centerData.media && originalSubmission.centerData.media) {
             // Start with the original media to preserve categories not being updated
             const mergedMedia = { ...originalSubmission.centerData.media };
 
-            // Update only the media categories that are provided in the request
+            // For each media category provided in the update request:
+            // - If the frontend sends a list, replace the category with that list
+            // - This list contains both existing media (not removed) and new media (added)
             for (const [category, updatedMediaList] of Object.entries(centerData.media)) {
                 if (Array.isArray(updatedMediaList)) {
+                    // Replace the category with the complete list sent by frontend
                     mergedMedia[category] = updatedMediaList;
                 }
             }
 
             updatedCenterData.media = mergedMedia;
         } else if (!centerData.media && originalSubmission.centerData.media) {
-            // If no media is provided in the update but original had media, preserve it
+            // If no media data is provided in the update request but original submission had media,
+            // preserve all original media (user only updated text fields)
             updatedCenterData.media = originalSubmission.centerData.media;
         }
 

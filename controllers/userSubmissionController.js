@@ -175,15 +175,24 @@ export const updateSubmission = async (req, res) => {
             updatedCenterData.media = originalSubmission.centerData.media;
         }
 
-        // Update the submission
+        // Update the submission - use $set to ensure entire media object is replaced
+        console.log('About to update submission with data:', JSON.stringify({
+            centerData: updatedCenterData,
+            updatedAt: new Date()
+        }, null, 2));
+
         const updatedSubmission = await UserSubmission.findOneAndUpdate(
             { _id: id, submittedBy: userEmail },
             {
-                centerData: updatedCenterData,
-                updatedAt: new Date()
+                $set: {
+                    centerData: updatedCenterData,
+                    updatedAt: new Date()
+                }
             },
             { new: true }
         );
+
+        console.log('Updated submission result:', JSON.stringify(updatedSubmission, null, 2));
 
         res.json(updatedSubmission);
     } catch (error) {

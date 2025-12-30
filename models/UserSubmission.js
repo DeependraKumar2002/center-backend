@@ -15,7 +15,7 @@ const locationSchema = new mongoose.Schema({
 
 const mediaSchema = new mongoose.Schema({
     url: String,
-    publicId: String,
+    public_id: String,  // Changed to match frontend format
     type: String, // 'image' or 'video'
     originalName: String,
     uploadedAt: {

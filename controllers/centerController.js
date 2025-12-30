@@ -65,7 +65,7 @@ export const getCentersByName = async (req, res) => {
 export const createCenter = async (req, res) => {
     try {
         const { centerCode, centerName, state, city, latitude, longitude, address, media, biometricDeskCount, remark } = req.body;
-        console.log('Received data:', { centerCode, centerName, state, city, latitude, longitude, address, biometricDeskCount });
+        // console.log('Received data:', { centerCode, centerName, state, city, latitude, longitude, address, biometricDeskCount });
 
         // Get user email from token
         const userEmail = req.user?.email;
@@ -147,8 +147,8 @@ export const createCenter = async (req, res) => {
             centerData.media = processedMedia;
         }
 
-        // Create a user submission record (this will be the primary storage)
-        console.log('Location data from request:', { latitude, longitude, address, remark });
+        // // Create a user submission record (this will be the primary storage)
+        // console.log('Location data from request:', { latitude, longitude, address, remark });
 
         // Extract location from media if main location is missing
         let finalLatitude = latitude;
@@ -170,7 +170,7 @@ export const createCenter = async (req, res) => {
                         finalLatitude = firstMediaWithLocation.location.latitude;
                         finalLongitude = firstMediaWithLocation.location.longitude;
                         finalAddress = firstMediaWithLocation.address || finalAddress;
-                        console.log('Using location from media:', { finalLatitude, finalLongitude, finalAddress });
+                        // console.log('Using location from media:', { finalLatitude, finalLongitude, finalAddress });
                         break;
                     }
                 }

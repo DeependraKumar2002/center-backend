@@ -129,6 +129,9 @@ export const updateSubmission = async (req, res) => {
         const userEmail = req.user.email;
         const { centerData } = req.body;
 
+        // Debug logging to check received media
+        console.log('Received centerData for update:', JSON.stringify(centerData, null, 2));
+
         // Verify that the submission belongs to the user
         const submission = await UserSubmission.findOne({
             _id: id,
@@ -145,37 +148,27 @@ export const updateSubmission = async (req, res) => {
         // Create updated center data starting with the new data
         const updatedCenterData = { ...centerData };
 
-        // Handle media preservation: preserve all existing media and add new media (append-only)
+        // Handle media preservation: properly manage existing media, deletions, and additions
+        console.log('Original submission media:', JSON.stringify(originalSubmission.centerData.media, null, 2));
+        console.log('Media to update with:', JSON.stringify(centerData.media, null, 2));
+
         if (centerData.media && originalSubmission.centerData.media) {
             // Start with the original media to preserve all existing media
             const mergedMedia = { ...originalSubmission.centerData.media };
 
             // For each media category provided in the update request:
-            // - Append new media to existing media in that category (never remove existing media)
-            for (const [category, newMediaList] of Object.entries(centerData.media)) {
-                if (Array.isArray(newMediaList)) {
-                    // Get existing media for this category
-                    const existingCategoryMedia = mergedMedia[category] || [];
-
-                    // Create a map of existing media by public_id for deduplication
-                    const existingMediaMap = {};
-                    existingCategoryMedia.forEach(mediaItem => {
-                        if (mediaItem.public_id) {
-                            existingMediaMap[mediaItem.public_id] = true;
-                        }
-                    });
-
-                    // Filter out new media that already exists (based on public_id) to avoid duplicates
-                    const uniqueNewMedia = newMediaList.filter(newItem =>
-                        !newItem.public_id || !existingMediaMap[newItem.public_id]
-                    );
-
-                    // Append new unique media to existing media
-                    mergedMedia[category] = [...existingCategoryMedia, ...uniqueNewMedia];
+            // - Replace the category with the complete list sent by the frontend
+            // - The frontend sends all media that should remain in the category (not removed) plus new media
+            for (const [category, updatedMediaList] of Object.entries(centerData.media)) {
+                if (Array.isArray(updatedMediaList)) {
+                    // Replace the category with the complete list sent by frontend
+                    mergedMedia[category] = updatedMediaList;
+                    console.log(`Updated category ${category} with ${updatedMediaList.length} media items`);
                 }
             }
 
             updatedCenterData.media = mergedMedia;
+            console.log('Final merged media:', JSON.stringify(mergedMedia, null, 2));
         } else if (!centerData.media && originalSubmission.centerData.media) {
             // If no media data is provided in the update request but original submission had media,
             // preserve all original media (user only updated text fields)

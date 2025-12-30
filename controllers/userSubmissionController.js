@@ -161,9 +161,18 @@ export const updateSubmission = async (req, res) => {
             // - The frontend sends all media that should remain in the category (not removed) plus new media
             for (const [category, updatedMediaList] of Object.entries(centerData.media)) {
                 if (Array.isArray(updatedMediaList)) {
+                    // Ensure all media items have required fields for the schema
+                    const processedMediaList = updatedMediaList.map(mediaItem => {
+                        // Ensure uploadedAt field exists for new media
+                        if (!mediaItem.uploadedAt) {
+                            mediaItem.uploadedAt = new Date();
+                        }
+                        return mediaItem;
+                    });
+
                     // Replace the category with the complete list sent by frontend
-                    mergedMedia[category] = updatedMediaList;
-                    console.log(`Updated category ${category} with ${updatedMediaList.length} media items`);
+                    mergedMedia[category] = processedMediaList;
+                    console.log(`Updated category ${category} with ${processedMediaList.length} media items`);
                 }
             }
 

@@ -175,22 +175,32 @@ export const updateSubmission = async (req, res) => {
             updatedCenterData.media = originalSubmission.centerData.media;
         }
 
-        // Update the submission - use $set to ensure entire media object is replaced
+        // Update the submission - try using save() method instead of findOneAndUpdate to avoid Mongoose subdocument issues
         console.log('About to update submission with data:', JSON.stringify({
             centerData: updatedCenterData,
             updatedAt: new Date()
         }, null, 2));
 
-        const updatedSubmission = await UserSubmission.findOneAndUpdate(
-            { _id: id, submittedBy: userEmail },
-            {
-                $set: {
-                    centerData: updatedCenterData,
-                    updatedAt: new Date()
-                }
-            },
-            { new: true }
-        );
+        const submissionToUpdate = await UserSubmission.findOne({ _id: id, submittedBy: userEmail });
+
+        if (!submissionToUpdate) {
+            return res.status(404).json({ message: 'Submission not found or does not belong to user' });
+        }
+
+        console.log('Original submission before update:', JSON.stringify({
+            media: submissionToUpdate.centerData.media
+        }, null, 2));
+
+        // Update the submission data
+        submissionToUpdate.centerData = updatedCenterData;
+        submissionToUpdate.updatedAt = new Date();
+
+        console.log('Media after assignment but before save:', JSON.stringify({
+            media: submissionToUpdate.centerData.media
+        }, null, 2));
+
+        // Save the updated submission
+        const updatedSubmission = await submissionToUpdate.save();
 
         console.log('Updated submission result:', JSON.stringify(updatedSubmission, null, 2));
 

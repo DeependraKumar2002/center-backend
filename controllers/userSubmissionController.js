@@ -139,13 +139,35 @@ export const updateSubmission = async (req, res) => {
             return res.status(404).json({ message: 'Submission not found or does not belong to user' });
         }
 
+        // Get the original submission to preserve media that aren't being updated
+        const originalSubmission = await UserSubmission.findById(id);
+
+        // Create updated center data starting with the new data
+        const updatedCenterData = { ...centerData };
+
+        // Handle media preservation: if media is provided in the update, merge it properly
+        if (centerData.media && originalSubmission.centerData.media) {
+            // Start with the original media to preserve categories not being updated
+            const mergedMedia = { ...originalSubmission.centerData.media };
+
+            // Update only the media categories that are provided in the request
+            for (const [category, updatedMediaList] of Object.entries(centerData.media)) {
+                if (Array.isArray(updatedMediaList)) {
+                    mergedMedia[category] = updatedMediaList;
+                }
+            }
+
+            updatedCenterData.media = mergedMedia;
+        } else if (!centerData.media && originalSubmission.centerData.media) {
+            // If no media is provided in the update but original had media, preserve it
+            updatedCenterData.media = originalSubmission.centerData.media;
+        }
+
         // Update the submission
         const updatedSubmission = await UserSubmission.findOneAndUpdate(
             { _id: id, submittedBy: userEmail },
             {
-                centerData: {
-                    ...centerData
-                },
+                centerData: updatedCenterData,
                 updatedAt: new Date()
             },
             { new: true }

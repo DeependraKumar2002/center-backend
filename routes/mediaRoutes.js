@@ -197,4 +197,29 @@ router.get('/upload-signature', async (req, res) => {
     }
 });
 
+// POST /media/signed-upload-url - Generate signed upload URL for client-side uploads
+router.post('/signed-upload-url', async (req, res) => {
+    try {
+        const cloudinary = (await import('../config/cloudinary.js')).default;
+
+        // Generate an authenticated upload URL
+        const uploadResult = cloudinary.uploader.sign_request({
+            timestamp: Math.floor(Date.now() / 1000),
+            folder: `center_management_app/${req.body.centerCode || 'default'}`,
+            resource_type: req.body.resource_type || 'auto',
+        });
+
+        res.json({
+            ...uploadResult,
+            cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+            api_key: process.env.CLOUDINARY_API_KEY,
+        });
+    } catch (error) {
+        console.error('Error generating signed upload URL:', error);
+        res.status(500).json({
+            error: 'Failed to generate signed upload URL'
+        });
+    }
+});
+
 export default router;

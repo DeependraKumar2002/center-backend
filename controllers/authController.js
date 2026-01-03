@@ -59,22 +59,26 @@ export const getAllUsers = async (req, res) => {
 export const login = async (req, res) => {
   const { identifier, password } = req.body;
 
+  // Trim whitespace from identifier and password
+  const trimmedIdentifier = identifier?.trim();
+  const trimmedPassword = password?.trim();
+
   try {
     // Check for user by email or username
     let user;
-    if (identifier.includes('@')) {
+    if (trimmedIdentifier.includes('@')) {
       // If input contains '@', treat it as email
-      user = await User.findOne({ email: identifier });
+      user = await User.findOne({ email: trimmedIdentifier });
     } else {
       // Otherwise, treat it as username
-      user = await User.findOne({ username: identifier });
+      user = await User.findOne({ username: trimmedIdentifier });
     }
 
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    const match = await bcrypt.compare(password, user.password);
+    const match = await bcrypt.compare(trimmedPassword, user.password);
     if (!match) return res.status(401).json({ message: "Invalid credentials" });
 
     // Generate JWT token

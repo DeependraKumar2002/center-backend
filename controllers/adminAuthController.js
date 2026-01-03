@@ -50,15 +50,19 @@ export const registerAdmin = async (req, res) => {
 export const loginAdmin = async (req, res) => {
     const { identifier, password } = req.body;
 
+    // Trim whitespace from identifier and password
+    const trimmedIdentifier = identifier?.trim();
+    const trimmedPassword = password?.trim();
+
     try {
         // Check for admin by email or username
         let admin;
-        if (identifier.includes('@')) {
+        if (trimmedIdentifier.includes('@')) {
             // If input contains '@', treat it as email
-            admin = await Admin.findOne({ email: identifier });
+            admin = await Admin.findOne({ email: trimmedIdentifier });
         } else {
             // Otherwise, treat it as username
-            admin = await Admin.findOne({ username: identifier });
+            admin = await Admin.findOne({ username: trimmedIdentifier });
         }
 
         if (!admin) {
@@ -71,7 +75,7 @@ export const loginAdmin = async (req, res) => {
         }
 
         // Check password
-        const isMatch = await admin.comparePassword(password);
+        const isMatch = await admin.comparePassword(trimmedPassword);
         if (!isMatch) {
             return res.status(401).json({ message: 'Invalid credentials' });
         }

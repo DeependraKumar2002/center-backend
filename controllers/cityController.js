@@ -50,7 +50,10 @@ export const createCitiesBulk = async (req, res) => {
     try {
         const cities = req.body;
 
-        // Validate data
+        let insertedCities = [];
+        let duplicateCount = 0;
+        let errorCount = 0;
+
         for (const city of cities) {
             if (!city.name || !city.state) {
                 return res.status(400).json({ message: 'Missing required fields in city data' });
@@ -59,12 +62,26 @@ export const createCitiesBulk = async (req, res) => {
             // Check if city already exists in this state
             const existingCity = await City.findOne({ name: city.name, state: city.state });
             if (existingCity) {
-                return res.status(400).json({ message: `City ${city.name} already exists in state ${city.state}` });
+                duplicateCount++;
+                continue; // Skip this city
+            }
+
+            try {
+                const newCity = new City(city);
+                await newCity.save();
+                insertedCities.push(newCity);
+            } catch (error) {
+                errorCount++;
+                console.error(`Error saving city ${city.name}:`, error.message);
             }
         }
 
-        const savedCities = await City.insertMany(cities);
-        res.status(201).json(savedCities);
+        res.status(201).json({
+            message: `Successfully processed cities. Inserted: ${insertedCities.length}, Duplicates skipped: ${duplicateCount}, Errors: ${errorCount}`,
+            insertedCities: insertedCities,
+            duplicateCount: duplicateCount,
+            errorCount: errorCount
+        });
     } catch (error) {
         res.status(400).json({ message: error.message });
     }

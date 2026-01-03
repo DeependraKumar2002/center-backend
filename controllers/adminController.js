@@ -137,7 +137,8 @@ export const uploadCentersFromCSV = async (req, res) => {
                             centerCode,
                             centerName,
                             state,
-                            city
+                            city,
+                            submittedBy: 'admin' // Add required field
                         });
 
                         await newCenter.save();

@@ -19,6 +19,8 @@ import adminAuthRoutes from './routes/adminAuthRoutes.js';
    ENV & DATABASE
 ========================= */
 dotenv.config();
+
+// Only connect to DB, don't run seed data automatically
 connectDB();
 
 /* =========================

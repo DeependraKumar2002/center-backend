@@ -262,24 +262,35 @@ export const createCentersBulk = async (req, res) => {
         const savedSubmissions = await UserSubmission.insertMany(userSubmissions);
 
         // Also save to the main Center collection for state/city lookup
-        const centersForLookup = centers.map(center => ({
-            centerCode: center.centerCode,
-            centerName: center.centerName,
-            state: center.state,
-            city: center.city,
-            submittedBy: userEmail
-        }));
+        let insertedCount = 0;
+        let updatedCount = 0;
 
-        // Insert or update centers in the main collection
-        for (const center of centersForLookup) {
-            await Center.updateOne(
+        for (const center of centers) {
+            const result = await Center.updateOne(
                 { centerCode: center.centerCode },
-                { ...center },
+                {
+                    centerCode: center.centerCode,
+                    centerName: center.centerName,
+                    state: center.state,
+                    city: center.city,
+                    submittedBy: userEmail
+                },
                 { upsert: true } // Create if doesn't exist, update if exists
             );
+
+            if (result.upserted) {
+                insertedCount++;
+            } else {
+                updatedCount++;
+            }
         }
 
-        res.status(201).json(savedSubmissions);
+        res.status(201).json({
+            message: `Successfully processed centers. Inserted: ${insertedCount}, Updated: ${updatedCount}`,
+            savedSubmissions,
+            insertedCount,
+            updatedCount
+        });
     } catch (error) {
         res.status(400).json({ message: error.message });
     }

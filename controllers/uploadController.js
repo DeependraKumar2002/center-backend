@@ -139,14 +139,27 @@ const uploadCentersCSV = async (req, res) => {
     });
 
     // Process centers after CSV parsing is complete
+    let insertedCount = 0;
+    let duplicateCount = 0;
+
     if (centers.length > 0) {
-      // Insert centers
-      await Center.insertMany(centers, { ordered: false });
+      // Insert centers one by one, checking for duplicates
+      for (const center of centers) {
+        const existingCenter = await Center.findOne({ centerCode: center.centerCode });
+        if (!existingCenter) {
+          await Center.create(center);
+          insertedCount++;
+        } else {
+          duplicateCount++;
+        }
+      }
     }
 
     res.json({
       message: "Centers CSV uploaded & saved successfully",
       totalCenters: centers.length,
+      insertedCenters: insertedCount,
+      duplicateCenters: duplicateCount,
       cloudinaryUrl: csvUrl,
     });
 

@@ -37,7 +37,10 @@ export const createStatesBulk = async (req, res) => {
     try {
         const states = req.body;
 
-        // Validate data
+        let insertedStates = [];
+        let duplicateCount = 0;
+        let errorCount = 0;
+
         for (const state of states) {
             if (!state.name) {
                 return res.status(400).json({ message: 'Missing required fields in state data' });
@@ -46,12 +49,26 @@ export const createStatesBulk = async (req, res) => {
             // Check if state already exists
             const existingState = await State.findOne({ name: state.name });
             if (existingState) {
-                return res.status(400).json({ message: `State ${state.name} already exists` });
+                duplicateCount++;
+                continue; // Skip this state
+            }
+
+            try {
+                const newState = new State(state);
+                await newState.save();
+                insertedStates.push(newState);
+            } catch (error) {
+                errorCount++;
+                console.error(`Error saving state ${state.name}:`, error.message);
             }
         }
 
-        const savedStates = await State.insertMany(states);
-        res.status(201).json(savedStates);
+        res.status(201).json({
+            message: `Successfully processed states. Inserted: ${insertedStates.length}, Duplicates skipped: ${duplicateCount}, Errors: ${errorCount}`,
+            insertedStates: insertedStates,
+            duplicateCount: duplicateCount,
+            errorCount: errorCount
+        });
     } catch (error) {
         res.status(400).json({ message: error.message });
     }

@@ -14,31 +14,33 @@ const seedData = async () => {
         // Wait a moment for the connection to establish
         await new Promise(resolve => setTimeout(resolve, 1000));
 
-        // Clear existing data and indexes
-        await User.collection.dropIndexes().catch(err => console.log('No indexes to drop for users'));
-        await Center.collection.dropIndexes().catch(err => console.log('No indexes to drop for centers'));
-        await State.collection.dropIndexes().catch(err => console.log('No indexes to drop for states'));
-        await City.collection.dropIndexes().catch(err => console.log('No indexes to drop for cities'));
+        console.log('Checking for existing data...');
 
-        await User.deleteMany({});
-        await Center.deleteMany({});
-        await State.deleteMany({});
-        await City.deleteMany({});
+        // Count existing records
+        const existingCenters = await Center.countDocuments();
+        const existingStates = await State.countDocuments();
+        const existingCities = await City.countDocuments();
+        const existingUsers = await User.countDocuments();
 
-        console.log('Cleared existing data and indexes');
+        console.log(`Found ${existingCenters} existing centers, ${existingStates} states, ${existingCities} cities, ${existingUsers} users`);
 
-        // Create sample states
-        const states = [
-            { name: 'Maharashtra' },
-            { name: 'Gujarat' },
-            { name: 'Delhi' },
-            { name: 'Karnataka' }
-        ];
+        // Create sample states only if they don't exist
+        const stateNames = ['Maharashtra', 'Gujarat', 'Delhi', 'Karnataka'];
 
-        const savedStates = await State.insertMany(states);
-        console.log('States created:', savedStates.length);
+        for (const stateName of stateNames) {
+            const existingState = await State.findOne({ name: stateName });
+            if (!existingState) {
+                await State.create({ name: stateName });
+                console.log(`State created: ${stateName}`);
+            } else {
+                console.log(`State already exists: ${stateName}`);
+            }
+        }
 
-        // Create sample cities
+        const totalStates = await State.countDocuments();
+        console.log('Total states after seeding:', totalStates);
+
+        // Create sample cities only if they don't exist
         const cities = [
             { name: 'Mumbai', state: 'Maharashtra' },
             { name: 'Pune', state: 'Maharashtra' },
@@ -48,41 +50,65 @@ const seedData = async () => {
             { name: 'Bangalore', state: 'Karnataka' }
         ];
 
-        const savedCities = await City.insertMany(cities);
-        console.log('Cities created:', savedCities.length);
+        for (const city of cities) {
+            const existingCity = await City.findOne({ name: city.name, state: city.state });
+            if (!existingCity) {
+                await City.create(city);
+                console.log(`City created: ${city.name}, ${city.state}`);
+            } else {
+                console.log(`City already exists: ${city.name}, ${city.state}`);
+            }
+        }
 
-        // Create sample centers
+        const totalCities = await City.countDocuments();
+        console.log('Total cities after seeding:', totalCities);
+
+        // Create sample centers only if they don't exist (checking by centerCode)
         const centers = [
             {
                 centerCode: 'MH001',
                 centerName: 'Mumbai Central Center',
                 state: 'Maharashtra',
-                city: 'Mumbai'
+                city: 'Mumbai',
+                submittedBy: 'admin'
             },
             {
                 centerCode: 'MH002',
                 centerName: 'Pune Branch Center',
                 state: 'Maharashtra',
-                city: 'Pune'
+                city: 'Pune',
+                submittedBy: 'admin'
             },
             {
                 centerCode: 'GJ001',
                 centerName: 'Ahmedabad Main Center',
                 state: 'Gujarat',
-                city: 'Ahmedabad'
+                city: 'Ahmedabad',
+                submittedBy: 'admin'
             },
             {
                 centerCode: 'DL001',
                 centerName: 'Delhi Headquarters',
                 state: 'Delhi',
-                city: 'New Delhi'
+                city: 'New Delhi',
+                submittedBy: 'admin'
             }
         ];
 
-        const savedCenters = await Center.insertMany(centers);
-        console.log('Centers created:', savedCenters.length);
+        let createdCentersCount = 0;
+        for (const center of centers) {
+            const existingCenter = await Center.findOne({ centerCode: center.centerCode });
+            if (!existingCenter) {
+                await Center.create(center);
+                console.log(`Center created: ${center.centerCode} - ${center.centerName}`);
+                createdCentersCount++;
+            } else {
+                console.log(`Center already exists: ${center.centerCode} - ${center.centerName}`);
+            }
+        }
+        console.log('Centers created:', createdCentersCount);
 
-        // Create sample users with hashed passwords
+        // Create sample users with hashed passwords only if they don't exist
         const users = [
             {
                 username: 'admin',
@@ -101,8 +127,18 @@ const seedData = async () => {
             }
         ];
 
-        const savedUsers = await User.insertMany(users);
-        console.log('Users created:', savedUsers.length);
+        let createdUsersCount = 0;
+        for (const userData of users) {
+            const existingUser = await User.findOne({ email: userData.email });
+            if (!existingUser) {
+                await User.create(userData);
+                console.log(`User created: ${userData.username} - ${userData.email}`);
+                createdUsersCount++;
+            } else {
+                console.log(`User already exists: ${userData.username} - ${userData.email}`);
+            }
+        }
+        console.log('Users created:', createdUsersCount);
 
         console.log('Seeding completed successfully!');
         process.exit(0);

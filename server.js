@@ -30,9 +30,9 @@ const app = express();
    MIDDLEWARE
 ========================= */
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN || ['http://localhost:8081', 'https://center-backend-production.up.railway.app'], // Allow React Native Web dev server and Railway
+  origin: process.env.CORS_ORIGIN || '*', // Allow all origins for public access
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-  credentials: false, // Set to false when allowing all origins
+  credentials: true, // Allow credentials to be included
   optionsSuccessStatus: 200,
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Content-Length", "X-Content-Type-Options"],
   exposedHeaders: ["Content-Range", "X-Content-Range"],
@@ -43,10 +43,10 @@ app.use(cors(corsOptions));
 // Additional middleware to ensure CORS headers are present even in error scenarios
 app.use((req, res, next) => {
   // Set CORS headers for all requests
-  const origin = process.env.CORS_ORIGIN || 'https://center-backend-production.up.railway.app';
-  res.header('Access-Control-Allow-Origin', origin);
+  res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Content-Length, X-Content-Type-Options');
+  res.header('Access-Control-Allow-Credentials', 'true');
 
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
@@ -139,10 +139,10 @@ app.use((err, req, res, next) => {
   console.error('Global error handler:', err);
 
   // Ensure CORS headers are set for error responses
-  const origin = process.env.CORS_ORIGIN || 'https://center-backend-production.up.railway.app';
-  res.header('Access-Control-Allow-Origin', origin);
+  res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Content-Length, X-Content-Type-Options');
+  res.header('Access-Control-Allow-Credentials', 'true');
 
   // Prevent HTML error pages from being returned
   if (req.url.includes('/api/')) {

@@ -32,7 +32,7 @@ const app = express();
    MIDDLEWARE
 ========================= */
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN || '*', // Allow all origins for public access
+  origin: '*', // Allow all origins without restrictions
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
   credentials: true, // Allow credentials to be included
   optionsSuccessStatus: 200,
@@ -46,9 +46,10 @@ app.use(cors(corsOptions));
 app.use((req, res, next) => {
   // Set CORS headers for all requests
   res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Content-Length, X-Content-Type-Options');
   res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Expose-Headers', 'Content-Range, X-Content-Range');
 
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
@@ -142,9 +143,10 @@ app.use((err, req, res, next) => {
 
   // Ensure CORS headers are set for error responses
   res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Content-Length, X-Content-Type-Options');
   res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Expose-Headers', 'Content-Range, X-Content-Range');
 
   // Prevent HTML error pages from being returned
   if (req.url.includes('/api/')) {

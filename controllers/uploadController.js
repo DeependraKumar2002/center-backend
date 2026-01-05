@@ -11,7 +11,7 @@ const uploadUsersCSV = async (req, res) => {
       return res.status(400).json({ message: "CSV file required" });
     }
 
-    const csvUrl = req.file.path; // Cloudinary URL
+    const csvUrl = req.file.path || req.file.url || req.file.secure_url; // Cloudinary URL
 
     const response = await axios.get(csvUrl, {
       responseType: "stream",
@@ -86,7 +86,7 @@ const uploadCentersCSV = async (req, res) => {
       return res.status(400).json({ message: "CSV file required" });
     }
 
-    const csvUrl = req.file.path; // Cloudinary URL
+    const csvUrl = req.file.path || req.file.url || req.file.secure_url; // Cloudinary URL
 
     const response = await axios.get(csvUrl, {
       responseType: "stream",
@@ -145,12 +145,19 @@ const uploadCentersCSV = async (req, res) => {
     if (centers.length > 0) {
       // Insert centers one by one, checking for duplicates
       for (const center of centers) {
-        const existingCenter = await Center.findOne({ centerCode: center.centerCode });
-        if (!existingCenter) {
-          await Center.create(center);
-          insertedCount++;
-        } else {
-          duplicateCount++;
+        try {
+          // Check if center with this code already exists
+          const existingCenter = await Center.findOne({ centerCode: center.centerCode });
+          if (!existingCenter) {
+            await Center.create(center);
+            insertedCount++;
+          } else {
+            duplicateCount++;
+            console.log(`Skipping duplicate center code: ${center.centerCode}`);
+          }
+        } catch (dbError) {
+          console.error(`Error processing center ${center.centerCode}:`, dbError);
+          // Continue processing other centers even if one fails
         }
       }
     }
